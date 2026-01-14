@@ -1,0 +1,5 @@
+# Sensitive data - gauge sheets with proprietary info
+sheets/
+
+# OS files
+.DS_Store
