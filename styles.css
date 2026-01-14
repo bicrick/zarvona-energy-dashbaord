@@ -1284,6 +1284,45 @@ body {
     overflow-x: auto;
 }
 
+/* Well Test Table - Scrollable */
+#wellTestTable {
+    display: block;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#wellTestTable thead,
+#wellTestTable tbody,
+#wellTestTable tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+#wellTestTable thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#wellTestTable::-webkit-scrollbar {
+    width: 6px;
+}
+
+#wellTestTable::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+}
+
+#wellTestTable::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+#wellTestTable::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

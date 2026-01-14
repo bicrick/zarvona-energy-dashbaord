@@ -50,12 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeThemeToggle();
     updateWelcomeStats();
     showView('welcome');
-    
-    // Set Home as active on initial load
-    const homeNav = document.getElementById('nav-dashboard');
-    if (homeNav) {
-        homeNav.classList.add('active');
-    }
 });
 
 function initializeLogoHandler() {
@@ -63,13 +57,15 @@ function initializeLogoHandler() {
     if (logoLink) {
         logoLink.addEventListener('click', (e) => {
             e.preventDefault();
+            // Clear active state from nav items
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             // Reset current selection
             currentSheet = null;
             currentWell = null;
             // Show welcome/home view and refresh dashboard
             showView('welcome');
             updateWelcomeStats();
-            // Set Home section as active
+            // Set Operations Dashboard as active
             const dashboardNav = document.getElementById('nav-dashboard');
             if (dashboardNav) {
                 setActiveNavItem(dashboardNav);
@@ -94,12 +90,9 @@ function initializeHamburgerToggle() {
             localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
         });
         
-        // Restore collapsed state from localStorage, default to collapsed
+        // Restore collapsed state from localStorage
         const savedState = localStorage.getItem('sidebarCollapsed');
-        if (savedState === 'false') {
-            sidebar.classList.remove('collapsed');
-        } else {
-            // Default to collapsed (first visit or explicitly collapsed)
+        if (savedState === 'true') {
             sidebar.classList.add('collapsed');
         }
     }
@@ -111,24 +104,22 @@ function initializeHamburgerToggle() {
 
 /**
  * Initialize theme from localStorage or system preference
- * Supports three modes: 'light', 'dark', 'system'
  */
 function initializeTheme() {
-    const savedThemeMode = localStorage.getItem(THEME_STORAGE_KEY);
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     
-    if (savedThemeMode === 'light' || savedThemeMode === 'dark') {
-        // User has explicitly chosen light or dark
-        document.documentElement.setAttribute('data-theme', savedThemeMode);
+    if (savedTheme) {
+        // Use saved preference
+        document.documentElement.setAttribute('data-theme', savedTheme);
     } else {
-        // No preference or 'system' - follow system preference
+        // Check system preference
         applySystemTheme();
     }
     
     // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        const currentMode = localStorage.getItem(THEME_STORAGE_KEY);
-        // Only auto-switch if user is in 'system' mode
-        if (!currentMode || currentMode === 'system') {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only auto-switch if user hasn't set a manual preference
+        if (!localStorage.getItem(THEME_STORAGE_KEY)) {
             applySystemTheme();
         }
     });
@@ -142,6 +133,7 @@ function initializeTheme() {
 function applySystemTheme() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    updateThemeToggleLabel();
 }
 
 /**
@@ -155,60 +147,26 @@ function initializeThemeToggle() {
 }
 
 /**
- * Toggle between light, dark, and system themes
- * Cycle: system -> light -> dark -> system
+ * Toggle between light and dark themes
  */
 function toggleTheme() {
-    const currentMode = localStorage.getItem(THEME_STORAGE_KEY) || 'system';
-    let newMode;
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     
-    // Cycle through modes
-    if (currentMode === 'system') {
-        newMode = 'light';
-    } else if (currentMode === 'light') {
-        newMode = 'dark';
-    } else {
-        newMode = 'system';
-    }
-    
-    // Apply the new mode
-    if (newMode === 'system') {
-        localStorage.setItem(THEME_STORAGE_KEY, 'system');
-        applySystemTheme();
-    } else {
-        localStorage.setItem(THEME_STORAGE_KEY, newMode);
-        document.documentElement.setAttribute('data-theme', newMode);
-    }
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
     
     updateThemeToggleLabel();
 }
 
 /**
- * Update the toggle button label and icon based on current theme mode
+ * Update the toggle button label based on current theme
  */
 function updateThemeToggleLabel() {
     const label = document.querySelector('.theme-toggle-label');
-    const iconSun = document.querySelector('.theme-toggle .icon-sun');
-    const iconMoon = document.querySelector('.theme-toggle .icon-moon');
-    const iconSystem = document.querySelector('.theme-toggle .icon-system');
-    
-    const currentMode = localStorage.getItem(THEME_STORAGE_KEY) || 'system';
-    
     if (label) {
-        if (currentMode === 'system') {
-            label.textContent = 'System';
-        } else if (currentMode === 'light') {
-            label.textContent = 'Light';
-        } else {
-            label.textContent = 'Dark';
-        }
-    }
-    
-    // Update icon visibility
-    if (iconSun && iconMoon && iconSystem) {
-        iconSun.style.display = currentMode === 'light' ? 'block' : 'none';
-        iconMoon.style.display = currentMode === 'dark' ? 'block' : 'none';
-        iconSystem.style.display = currentMode === 'system' ? 'block' : 'none';
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        label.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
     }
 }
 
@@ -260,59 +218,18 @@ function initializeNavigation() {
     const navTree = document.getElementById('navTree');
     navTree.innerHTML = '';
     
-    // Create Home section (clickable header, no children)
-    const homeSection = createClickableSection('Home', 'home-section', 'nav-dashboard', () => {
-        showView('welcome');
-        updateWelcomeStats();
-    });
-    navTree.appendChild(homeSection);
-    
-    // Create Explore section with charts
-    const exploreSection = createNavSection('Explore', 'explore-section', [
+    // Create Home section
+    const homeSection = createNavSection('Home', 'home-section', [
+        { id: 'nav-dashboard', label: 'Operations Dashboard', icon: 'dashboard', action: () => { showView('welcome'); updateWelcomeStats(); } },
         { id: 'nav-oil-chart', label: 'Oil Production', icon: 'oil', action: () => showOilChartView() },
         { id: 'nav-water-chart', label: 'Water Consumption', icon: 'water', action: () => showWaterChartView() },
         { id: 'nav-gas-chart', label: 'Gas Production', icon: 'gas', action: () => showGasChartView() }
     ]);
-    navTree.appendChild(exploreSection);
+    navTree.appendChild(homeSection);
     
     // Create Wells section
     const wellsSection = createWellsSection();
     navTree.appendChild(wellsSection);
-}
-
-/**
- * Create a clickable section header (no dropdown, just navigates)
- */
-function createClickableSection(title, sectionId, navId, action) {
-    const section = document.createElement('div');
-    section.className = 'nav-section nav-section-clickable';
-    section.id = sectionId;
-    
-    // Section header (clickable, no chevron)
-    const header = document.createElement('div');
-    header.className = 'nav-section-header';
-    header.id = navId;
-    header.setAttribute('data-tooltip', title);
-    header.innerHTML = `
-        <span class="nav-section-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-        </span>
-        <span class="nav-section-title">${title}</span>
-    `;
-    
-    header.addEventListener('click', () => {
-        // Clear other active states and set this one active
-        document.querySelectorAll('.nav-item.active, .nav-section-header.active').forEach(el => el.classList.remove('active'));
-        header.classList.add('active');
-        action();
-    });
-    
-    section.appendChild(header);
-    
-    return section;
 }
 
 /**
@@ -378,9 +295,8 @@ function createNavSectionItem(item) {
         water: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
             <path d="M12 2C12 2 4 10 4 15a8 8 0 0 0 16 0c0-5-8-13-8-13z"></path>
            </svg>`,
-        gas: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2c-1.5 4.5-6 7-6 11a6 6 0 1 0 12 0c0-4-4.5-6.5-6-11Z"></path>
-            <path d="M12 13a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1Z" fill="#ef4444"></path>
+        gas: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+            <path d="M12 2v6m0 4v10M5 12h14M8 6h8M6 18h12"></path>
            </svg>`,
         chart: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
@@ -453,7 +369,9 @@ function createGaugeSheetNavItem(sheet) {
     div.className = 'nav-gauge-sheet';
     
     const hasData = appData[sheet.id] && appData[sheet.id].wells;
-    const wellCount = hasData ? appData[sheet.id].wells.length : 0;
+    // Filter out inactive wells for count and display
+    const activeWells = hasData ? appData[sheet.id].wells.filter(w => w.status !== 'inactive') : [];
+    const wellCount = activeWells.length;
     
     div.innerHTML = `
         <div class="nav-item" data-sheet-id="${sheet.id}">
@@ -475,15 +393,15 @@ function createGaugeSheetNavItem(sheet) {
         showGaugeSheetView(sheet.id);
         
         // Toggle children if has data
-        if (hasData) {
+        if (hasData && activeWells.length > 0) {
             navItem.classList.toggle('expanded');
             childrenContainer.classList.toggle('visible');
         }
     });
     
-    // Add well children if data exists
+    // Add well children if data exists (only active wells)
     if (hasData) {
-        appData[sheet.id].wells.forEach(well => {
+        activeWells.forEach(well => {
             const wellEl = createWellNavItem(well, sheet);
             childrenContainer.appendChild(wellEl);
         });
@@ -513,7 +431,7 @@ function createWellNavItem(well, sheet) {
 }
 
 function setActiveNavItem(item) {
-    document.querySelectorAll('.nav-item.active, .nav-section-header.active').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     item.classList.add('active');
 }
 
@@ -574,37 +492,19 @@ let oilChartDateRange = { min: null, max: null };
 let waterChartDateRange = { min: null, max: null };
 let gasChartDateRange = { min: null, max: null };
 
-// Store selected wells for each chart type (null = all selected)
-let chartExplorerState = {
-    oil: null,
-    water: null,
-    gas: null
-};
-
-// Store aggregation period for each chart type ('day', 'week', 'month')
-let chartAggregationPeriod = {
-    oil: 'month',
-    water: 'month',
-    gas: 'month'
-};
-
 /**
  * Show the aggregate oil production chart view
  */
 function showOilChartView(startDate = null, endDate = null) {
     showView('oilChart');
-    initializeAggregationOptions('oil');
-    renderChartExplorer('oil');
     renderAggregateChart('oil', startDate, endDate);
 }
 
 /**
- * Show the aggregate water consumption chart view
+ * Show the aggregate water production chart view
  */
 function showWaterChartView(startDate = null, endDate = null) {
     showView('waterChart');
-    initializeAggregationOptions('water');
-    renderChartExplorer('water');
     renderAggregateChart('water', startDate, endDate);
 }
 
@@ -613,289 +513,7 @@ function showWaterChartView(startDate = null, endDate = null) {
  */
 function showGasChartView(startDate = null, endDate = null) {
     showView('gasChart');
-    initializeAggregationOptions('gas');
-    renderChartExplorer('gas');
     renderAggregateChart('gas', startDate, endDate);
-}
-
-/**
- * Initialize aggregation period radio button event listeners
- */
-function initializeAggregationOptions(chartType) {
-    const containerIds = {
-        oil: 'oilAggregationOptions',
-        water: 'waterAggregationOptions',
-        gas: 'gasAggregationOptions'
-    };
-    
-    const container = document.getElementById(containerIds[chartType]);
-    if (!container) return;
-    
-    // Set the current selection
-    const currentPeriod = chartAggregationPeriod[chartType];
-    const radio = container.querySelector(`input[value="${currentPeriod}"]`);
-    if (radio) radio.checked = true;
-    
-    // Add event listeners (clone to remove old listeners)
-    container.querySelectorAll('input[type="radio"]').forEach(input => {
-        const newInput = input.cloneNode(true);
-        input.parentNode.replaceChild(newInput, input);
-        
-        newInput.addEventListener('change', (e) => {
-            chartAggregationPeriod[chartType] = e.target.value;
-            updateAggregateChartFromExplorer(chartType);
-        });
-    });
-}
-
-/**
- * Render the chart explorer panel with battery/well checkboxes
- * @param {string} chartType - 'oil', 'water', or 'gas'
- */
-function renderChartExplorer(chartType) {
-    const containerIds = {
-        oil: 'oilChartBatteries',
-        water: 'waterChartBatteries',
-        gas: 'gasChartBatteries'
-    };
-    
-    const toggleBtnIds = {
-        oil: 'btnToggleAllOil',
-        water: 'btnToggleAllWater',
-        gas: 'btnToggleAllGas'
-    };
-    
-    const container = document.getElementById(containerIds[chartType]);
-    const toggleBtn = document.getElementById(toggleBtnIds[chartType]);
-    
-    if (!container) return;
-    
-    // Initialize state if null (all selected)
-    if (chartExplorerState[chartType] === null) {
-        chartExplorerState[chartType] = getAllWellIds();
-    }
-    
-    const selectedWells = chartExplorerState[chartType];
-    
-    // Build explorer HTML
-    let html = '';
-    
-    GAUGE_SHEETS.forEach(sheet => {
-        const sheetData = appData[sheet.id];
-        if (!sheetData || !sheetData.wells || sheetData.wells.length === 0) return;
-        
-        const wells = sheetData.wells;
-        const wellsInBattery = wells.map(w => `${sheet.id}:${w.id}`);
-        const selectedInBattery = wellsInBattery.filter(id => selectedWells.includes(id));
-        const allSelected = selectedInBattery.length === wells.length;
-        const someSelected = selectedInBattery.length > 0 && selectedInBattery.length < wells.length;
-        
-        html += `
-            <div class="explorer-battery" data-battery-id="${sheet.id}">
-                <div class="explorer-battery-header">
-                    <label class="explorer-checkbox">
-                        <input type="checkbox" 
-                               class="battery-checkbox" 
-                               data-battery-id="${sheet.id}"
-                               data-chart-type="${chartType}"
-                               ${allSelected ? 'checked' : ''} 
-                               ${someSelected ? 'data-indeterminate="true"' : ''}>
-                        <span class="checkmark"></span>
-                    </label>
-                    <span class="battery-name">${sheet.name}</span>
-                    <span class="battery-count">${wells.length} wells</span>
-                    <button class="btn-expand-battery" data-battery-id="${sheet.id}">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                </div>
-                <div class="explorer-wells" id="wells-${chartType}-${sheet.id}">
-                    ${wells.map(well => {
-                        const wellId = `${sheet.id}:${well.id}`;
-                        const isSelected = selectedWells.includes(wellId);
-                        return `
-                            <label class="explorer-well">
-                                <input type="checkbox" 
-                                       class="well-checkbox" 
-                                       data-well-id="${wellId}"
-                                       data-battery-id="${sheet.id}"
-                                       data-chart-type="${chartType}"
-                                       ${isSelected ? 'checked' : ''}>
-                                <span class="checkmark"></span>
-                                <span class="well-name">${well.name}</span>
-                            </label>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html || '<p class="explorer-empty">No well data available</p>';
-    
-    // Set indeterminate state for checkboxes
-    container.querySelectorAll('.battery-checkbox[data-indeterminate="true"]').forEach(cb => {
-        cb.indeterminate = true;
-    });
-    
-    // Add event listeners
-    initializeChartExplorerEvents(chartType, container, toggleBtn);
-}
-
-/**
- * Get all well IDs across all batteries
- * @returns {Array} Array of well IDs in format "batteryId:wellId"
- */
-function getAllWellIds() {
-    const wellIds = [];
-    
-    GAUGE_SHEETS.forEach(sheet => {
-        const sheetData = appData[sheet.id];
-        if (sheetData && sheetData.wells) {
-            sheetData.wells.forEach(well => {
-                wellIds.push(`${sheet.id}:${well.id}`);
-            });
-        }
-    });
-    
-    return wellIds;
-}
-
-/**
- * Initialize event listeners for chart explorer
- */
-function initializeChartExplorerEvents(chartType, container, toggleBtn) {
-    // Battery checkbox change
-    container.querySelectorAll('.battery-checkbox').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const batteryId = e.target.dataset.batteryId;
-            const isChecked = e.target.checked;
-            
-            // Update all wells in this battery
-            container.querySelectorAll(`.well-checkbox[data-battery-id="${batteryId}"]`).forEach(wellCb => {
-                wellCb.checked = isChecked;
-            });
-            
-            updateChartExplorerState(chartType, container);
-        });
-    });
-    
-    // Well checkbox change
-    container.querySelectorAll('.well-checkbox').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const batteryId = e.target.dataset.batteryId;
-            
-            // Update battery checkbox state
-            updateBatteryCheckboxState(container, batteryId);
-            updateChartExplorerState(chartType, container);
-        });
-    });
-    
-    // Expand/collapse battery wells
-    container.querySelectorAll('.btn-expand-battery').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const batteryId = btn.dataset.batteryId;
-            const wellsContainer = document.getElementById(`wells-${chartType}-${batteryId}`);
-            const batteryDiv = btn.closest('.explorer-battery');
-            
-            if (wellsContainer) {
-                wellsContainer.classList.toggle('expanded');
-                batteryDiv.classList.toggle('expanded');
-            }
-        });
-    });
-    
-    // Toggle all button
-    if (toggleBtn) {
-        // Remove old listener by cloning
-        const newToggleBtn = toggleBtn.cloneNode(true);
-        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
-        
-        newToggleBtn.addEventListener('click', () => {
-            const allWellIds = getAllWellIds();
-            const currentSelected = chartExplorerState[chartType] || [];
-            const allSelected = currentSelected.length === allWellIds.length;
-            
-            if (allSelected) {
-                // Deselect all
-                chartExplorerState[chartType] = [];
-                newToggleBtn.textContent = 'Select All';
-            } else {
-                // Select all
-                chartExplorerState[chartType] = allWellIds;
-                newToggleBtn.textContent = 'Deselect All';
-            }
-            
-            // Re-render explorer and chart
-            renderChartExplorer(chartType);
-            updateAggregateChartFromExplorer(chartType);
-        });
-        
-        // Update button text based on current state
-        const allWellIds = getAllWellIds();
-        const currentSelected = chartExplorerState[chartType] || [];
-        newToggleBtn.textContent = currentSelected.length === allWellIds.length ? 'Deselect All' : 'Select All';
-    }
-}
-
-/**
- * Update battery checkbox state based on well selections
- */
-function updateBatteryCheckboxState(container, batteryId) {
-    const batteryCheckbox = container.querySelector(`.battery-checkbox[data-battery-id="${batteryId}"]`);
-    const wellCheckboxes = container.querySelectorAll(`.well-checkbox[data-battery-id="${batteryId}"]`);
-    
-    if (!batteryCheckbox || wellCheckboxes.length === 0) return;
-    
-    const checkedCount = Array.from(wellCheckboxes).filter(cb => cb.checked).length;
-    
-    if (checkedCount === 0) {
-        batteryCheckbox.checked = false;
-        batteryCheckbox.indeterminate = false;
-    } else if (checkedCount === wellCheckboxes.length) {
-        batteryCheckbox.checked = true;
-        batteryCheckbox.indeterminate = false;
-    } else {
-        batteryCheckbox.checked = false;
-        batteryCheckbox.indeterminate = true;
-    }
-}
-
-/**
- * Update chart explorer state from checkbox selections
- */
-function updateChartExplorerState(chartType, container) {
-    const selectedWells = [];
-    
-    container.querySelectorAll('.well-checkbox:checked').forEach(cb => {
-        selectedWells.push(cb.dataset.wellId);
-    });
-    
-    chartExplorerState[chartType] = selectedWells;
-    
-    // Update the chart
-    updateAggregateChartFromExplorer(chartType);
-}
-
-/**
- * Update aggregate chart based on current explorer state
- */
-function updateAggregateChartFromExplorer(chartType) {
-    // Get current date range values
-    const dateInputIds = {
-        oil: { start: 'oilChartStartDate', end: 'oilChartEndDate' },
-        water: { start: 'waterChartStartDate', end: 'waterChartEndDate' },
-        gas: { start: 'gasChartStartDate', end: 'gasChartEndDate' }
-    };
-    
-    const startInput = document.getElementById(dateInputIds[chartType].start);
-    const endInput = document.getElementById(dateInputIds[chartType].end);
-    
-    const startDate = startInput && startInput.value ? new Date(startInput.value) : null;
-    const endDate = endInput && endInput.value ? new Date(endInput.value + 'T23:59:59') : null;
-    
-    renderAggregateChart(chartType, startDate, endDate);
 }
 
 /**
@@ -959,10 +577,8 @@ function renderAggregateChart(dataType, startDate = null, endDate = null) {
         aggregateGasChart = null;
     }
     
-    // Get aggregate data (filtered by selected wells and aggregation period)
-    const selectedWells = chartExplorerState[dataType];
-    const aggregationPeriod = chartAggregationPeriod[dataType];
-    const { data, dateRange } = getAggregateProductionTimeSeries(dataType, startDate, endDate, selectedWells, aggregationPeriod);
+    // Get aggregate data
+    const { data, dateRange } = getAggregateProductionTimeSeries(dataType, startDate, endDate);
     
     // Store full date range for date picker bounds
     if (dataType === 'oil') {
@@ -975,6 +591,9 @@ function renderAggregateChart(dataType, startDate = null, endDate = null) {
     
     // Initialize date pickers
     initializeAggregateChartDatePickers(dataType, config, startDate, endDate, dateRange);
+    
+    // Populate wells filter
+    populateWellsFilter(dataType);
     
     const canvas = document.getElementById(config.canvasId);
     if (!canvas) return;
@@ -1116,6 +735,127 @@ function initializeAggregateChartDatePickers(dataType, config, startDate, endDat
     newResetBtn.addEventListener('click', () => config.showFn(null, null));
 }
 
+/**
+ * Populate the wells filter sidebar for aggregate charts
+ * @param {string} dataType - 'oil', 'water', or 'gas'
+ */
+function populateWellsFilter(dataType) {
+    const containerIds = {
+        oil: 'oilChartBatteries',
+        water: 'waterChartBatteries',
+        gas: 'gasChartBatteries'
+    };
+    
+    const container = document.getElementById(containerIds[dataType]);
+    if (!container) return;
+    
+    // Clear existing content
+    container.innerHTML = '';
+    
+    // Check if we have any data
+    if (!hasUploadedData()) {
+        container.innerHTML = '<div class="explorer-empty">No data uploaded</div>';
+        return;
+    }
+    
+    // Build the wells filter UI grouped by battery
+    GAUGE_SHEETS.forEach(sheetConfig => {
+        const sheetData = appData[sheetConfig.id];
+        if (!sheetData || !sheetData.wells || sheetData.wells.length === 0) return;
+        
+        // Filter to active wells only
+        const activeWells = sheetData.wells.filter(w => w.status !== 'inactive');
+        if (activeWells.length === 0) return;
+        
+        // Create battery section
+        const batterySection = document.createElement('div');
+        batterySection.className = 'explorer-battery';
+        
+        // Battery header with checkbox
+        const batteryHeader = document.createElement('div');
+        batteryHeader.className = 'explorer-battery-header';
+        batteryHeader.innerHTML = `
+            <label class="explorer-checkbox">
+                <input type="checkbox" class="battery-checkbox" data-battery="${sheetConfig.id}" checked>
+                <span class="checkmark"></span>
+            </label>
+            <span class="battery-name">${sheetConfig.name}</span>
+            <span class="battery-count">${activeWells.length}</span>
+        `;
+        
+        // Wells list (collapsed by default)
+        const wellsList = document.createElement('div');
+        wellsList.className = 'explorer-wells';
+        wellsList.id = `wells-${dataType}-${sheetConfig.id}`;
+        
+        activeWells.forEach(well => {
+            const wellItem = document.createElement('label');
+            wellItem.className = 'explorer-well explorer-checkbox';
+            wellItem.innerHTML = `
+                <input type="checkbox" class="well-checkbox" data-battery="${sheetConfig.id}" data-well="${well.id}" checked>
+                <span class="checkmark"></span>
+                <span class="well-name">${well.name}</span>
+            `;
+            wellsList.appendChild(wellItem);
+        });
+        
+        batterySection.appendChild(batteryHeader);
+        batterySection.appendChild(wellsList);
+        container.appendChild(batterySection);
+        
+        // Toggle wells list on battery header click
+        batteryHeader.addEventListener('click', (e) => {
+            if (e.target.type === 'checkbox') return; // Don't toggle if clicking checkbox
+            wellsList.classList.toggle('expanded');
+        });
+        
+        // Battery checkbox controls all wells
+        const batteryCheckbox = batteryHeader.querySelector('.battery-checkbox');
+        batteryCheckbox.addEventListener('change', () => {
+            const checked = batteryCheckbox.checked;
+            wellsList.querySelectorAll('.well-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+        });
+        
+        // Well checkbox updates battery checkbox state
+        wellsList.querySelectorAll('.well-checkbox').forEach(wellCb => {
+            wellCb.addEventListener('change', () => {
+                const allWellCheckboxes = wellsList.querySelectorAll('.well-checkbox');
+                const checkedCount = wellsList.querySelectorAll('.well-checkbox:checked').length;
+                batteryCheckbox.checked = checkedCount === allWellCheckboxes.length;
+                batteryCheckbox.indeterminate = checkedCount > 0 && checkedCount < allWellCheckboxes.length;
+            });
+        });
+    });
+    
+    // Initialize "Select All" button
+    const toggleBtnIds = {
+        oil: 'btnToggleAllOil',
+        water: 'btnToggleAllWater',
+        gas: 'btnToggleAllGas'
+    };
+    
+    const toggleBtn = document.getElementById(toggleBtnIds[dataType]);
+    if (toggleBtn) {
+        // Clone to remove old listeners
+        const newToggleBtn = toggleBtn.cloneNode(true);
+        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+        
+        newToggleBtn.addEventListener('click', () => {
+            const allCheckboxes = container.querySelectorAll('input[type="checkbox"]');
+            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+            
+            allCheckboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                cb.indeterminate = false;
+            });
+            
+            newToggleBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+        });
+    }
+}
+
 // ============================================================================
 // Operations Dashboard Rendering
 // ============================================================================
@@ -1139,35 +879,6 @@ function renderDashboardStats() {
     document.getElementById('statDailyOil').textContent = stats.totalOil.toLocaleString();
     document.getElementById('statDailyWater').textContent = stats.totalWater.toLocaleString();
     document.getElementById('statDailyGas').textContent = stats.totalGas.toLocaleString();
-    
-    // Add click handlers to stat cards
-    const statCardOil = document.getElementById('statCardOil');
-    const statCardWater = document.getElementById('statCardWater');
-    const statCardGas = document.getElementById('statCardGas');
-    
-    if (statCardOil) {
-        statCardOil.onclick = () => {
-            const navItem = document.getElementById('nav-oil-chart');
-            if (navItem) setActiveNavItem(navItem);
-            showOilChartView();
-        };
-    }
-    
-    if (statCardWater) {
-        statCardWater.onclick = () => {
-            const navItem = document.getElementById('nav-water-chart');
-            if (navItem) setActiveNavItem(navItem);
-            showWaterChartView();
-        };
-    }
-    
-    if (statCardGas) {
-        statCardGas.onclick = () => {
-            const navItem = document.getElementById('nav-gas-chart');
-            if (navItem) setActiveNavItem(navItem);
-            showGasChartView();
-        };
-    }
 }
 
 /**
@@ -1332,6 +1043,7 @@ async function processBulkUploadFromDashboard(files) {
         loadingSubtext.textContent = `${processed + 1} of ${files.length}: ${file.name}`;
         
         const sheetConfig = GAUGE_SHEETS.find(s => 
+            file.name.toLowerCase().includes(s.fileName.toLowerCase().replace('.xlsx', '').replace('.xlsm', '')) ||
             s.fileName.toLowerCase() === file.name.toLowerCase()
         );
         
@@ -1421,10 +1133,18 @@ function renderWellsGrid(sheetId) {
         return;
     }
     
-    grid.innerHTML = sheetData.wells.map(well => {
+    // Filter out inactive wells
+    const activeWells = sheetData.wells.filter(w => w.status !== 'inactive');
+    
+    if (activeWells.length === 0) {
+        grid.innerHTML = '<p class="empty-message">No active wells</p>';
+        return;
+    }
+    
+    grid.innerHTML = activeWells.map(well => {
         const latestTest = well.wellTests && well.wellTests[0];
-        const latestOil = latestTest ? latestTest.oil : null;
-        const testCount = well.wellTests ? well.wellTests.length : 0;
+        const latestOil = latestTest ? Math.round(latestTest.oil * 100) / 100 : null;
+        const latestGas = latestTest && latestTest.gas !== null ? Math.round(Math.max(0, latestTest.gas) * 100) / 100 : null;
         
         return `
             <div class="well-card" data-well-id="${well.id}" data-sheet-id="${sheetId}">
@@ -1435,8 +1155,8 @@ function renderWellsGrid(sheetId) {
                         <span class="well-stat-value">${latestOil !== null ? latestOil + ' bbl' : '-'}</span>
                     </div>
                     <div class="well-stat">
-                        <span class="well-stat-label">Tests</span>
-                        <span class="well-stat-value">${testCount}</span>
+                        <span class="well-stat-label">Latest Gas</span>
+                        <span class="well-stat-value">${latestGas !== null ? latestGas + ' mcf' : '-'}</span>
                     </div>
                 </div>
             </div>
@@ -1660,6 +1380,7 @@ async function processBulkUpload(files) {
         
         // Find matching gauge sheet config
         const sheetConfig = GAUGE_SHEETS.find(s => 
+            file.name.toLowerCase().includes(s.fileName.toLowerCase().replace('.xlsx', '').replace('.xlsm', '')) ||
             s.fileName.toLowerCase() === file.name.toLowerCase()
         );
         
@@ -1988,20 +1709,36 @@ function handleDateRangeReset() {
 
 function renderWellTestTable(wellTests) {
     const tbody = document.querySelector('#wellTestTable tbody');
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
     
     if (!wellTests || wellTests.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6b7280;">No test data</td></tr>';
         return;
     }
     
-    tbody.innerHTML = wellTests.map(test => `
-        <tr>
-            <td>${formatDate(test.date)}</td>
-            <td>${test.oil !== null ? test.oil : '-'}</td>
-            <td>${test.water !== null ? test.water : '-'}</td>
-            <td>${test.gas !== null ? test.gas : '-'}</td>
-        </tr>
-    `).join('');
+    // Filter out future dates
+    const validTests = wellTests.filter(test => {
+        const testDate = new Date(test.date);
+        return testDate <= today;
+    });
+    
+    if (validTests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6b7280;">No test data</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = validTests.map(test => {
+        const gas = test.gas !== null ? Math.round(Math.max(0, test.gas) * 100) / 100 : null;
+        return `
+            <tr>
+                <td>${formatDate(test.date)}</td>
+                <td>${test.oil !== null ? Math.round(test.oil * 100) / 100 : '-'}</td>
+                <td>${test.water !== null ? Math.round(test.water * 100) / 100 : '-'}</td>
+                <td>${gas !== null ? gas : '-'}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderChemicalProgram(program) {
@@ -2094,22 +1831,36 @@ function getAggregateStats() {
     let totalOil = 0;
     let totalWater = 0;
     let totalGas = 0;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
     
     Object.keys(appData).forEach(sheetId => {
         const sheet = appData[sheetId];
         if (sheet && sheet.wells && sheet.wells.length > 0) {
             sheet.wells.forEach(well => {
-                // Get latest well test for production numbers
+                // Skip inactive wells
+                if (well.status === 'inactive') return;
+                
+                // Get latest well test for production numbers (excluding future dates)
                 if (well.wellTests && well.wellTests.length > 0) {
-                    const latestTest = well.wellTests[0];
-                    if (latestTest.oil !== null && !isNaN(latestTest.oil)) {
-                        totalOil += Number(latestTest.oil);
-                    }
-                    if (latestTest.water !== null && !isNaN(latestTest.water)) {
-                        totalWater += Number(latestTest.water);
-                    }
-                    if (latestTest.gas !== null && !isNaN(latestTest.gas)) {
-                        totalGas += Number(latestTest.gas);
+                    // Find the most recent test that's not in the future
+                    const validTests = well.wellTests.filter(t => {
+                        const testDate = new Date(t.date);
+                        return testDate <= today;
+                    });
+                    
+                    if (validTests.length > 0) {
+                        const latestTest = validTests[0];
+                        if (latestTest.oil !== null && !isNaN(latestTest.oil)) {
+                            totalOil += Number(latestTest.oil);
+                        }
+                        if (latestTest.water !== null && !isNaN(latestTest.water)) {
+                            totalWater += Number(latestTest.water);
+                        }
+                        // Convert negative gas to 0
+                        if (latestTest.gas !== null && !isNaN(latestTest.gas)) {
+                            totalGas += Math.max(0, Number(latestTest.gas));
+                        }
                     }
                 }
             });
@@ -2117,9 +1868,9 @@ function getAggregateStats() {
     });
     
     return {
-        totalOil: Math.round(totalOil),
-        totalWater: Math.round(totalWater),
-        totalGas: Math.round(totalGas)
+        totalOil: Math.round(totalOil * 100) / 100,
+        totalWater: Math.round(totalWater * 100) / 100,
+        totalGas: Math.round(totalGas * 100) / 100
     };
 }
 
@@ -2131,40 +1882,20 @@ function getAggregateStats() {
  * @param {Date} endDate - Optional end date filter
  * @returns {Object} { data: Array of {x: Date, y: Number}, dateRange: {min, max} }
  */
-function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, endDate = null, selectedWells = null, aggregationPeriod = 'day') {
-    // Map to aggregate values by date key
+function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, endDate = null) {
+    // Map to aggregate values by date string (YYYY-MM-DD)
     const dateMap = new Map();
     let minDate = null;
     let maxDate = null;
-    
-    /**
-     * Get the aggregation key for a date based on the period
-     */
-    function getAggregationKey(date, period) {
-        const d = new Date(date);
-        if (period === 'week') {
-            // Get Monday of the week
-            const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            const monday = new Date(d.setDate(diff));
-            return monday.toISOString().split('T')[0];
-        } else if (period === 'month') {
-            // First day of month
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-        }
-        // Default: day
-        return date.toISOString().split('T')[0];
-    }
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
     
     Object.keys(appData).forEach(sheetId => {
         const sheet = appData[sheetId];
         if (sheet && sheet.wells && sheet.wells.length > 0) {
             sheet.wells.forEach(well => {
-                // Check if this well is in the selected wells filter
-                const wellId = `${sheetId}:${well.id}`;
-                if (selectedWells && !selectedWells.includes(wellId)) {
-                    return; // Skip this well
-                }
+                // Skip inactive wells
+                if (well.status === 'inactive') return;
                 
                 // Use production array for time series data
                 const production = well.production || [];
@@ -2175,15 +1906,21 @@ function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, en
                     const date = new Date(item.date);
                     if (isNaN(date.getTime())) return;
                     
-                    const value = item[dataType];
+                    // Skip future dates
+                    if (date > today) return;
+                    
+                    let value = item[dataType];
                     if (value === null || value === undefined || isNaN(value)) return;
+                    
+                    // Convert negative gas to 0
+                    if (dataType === 'gas' && value < 0) value = 0;
                     
                     // Track date range
                     if (!minDate || date < minDate) minDate = date;
                     if (!maxDate || date > maxDate) maxDate = date;
                     
-                    // Aggregate by the appropriate period
-                    const dateKey = getAggregationKey(date, aggregationPeriod);
+                    // Aggregate by date
+                    const dateKey = date.toISOString().split('T')[0];
                     const currentVal = dateMap.get(dateKey) || 0;
                     dateMap.set(dateKey, currentVal + Number(value));
                 });
@@ -2222,6 +1959,8 @@ function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, en
  */
 function getTopProducingWells(limit = 10) {
     const allWells = [];
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
     
     Object.keys(appData).forEach(sheetId => {
         const sheet = appData[sheetId];
@@ -2229,13 +1968,20 @@ function getTopProducingWells(limit = 10) {
         
         if (sheet && sheet.wells && sheetConfig) {
             sheet.wells.forEach(well => {
+                // Skip inactive wells
+                if (well.status === 'inactive') return;
+                
                 let latestOil = null;
                 let latestWater = null;
                 
                 if (well.wellTests && well.wellTests.length > 0) {
-                    const latestTest = well.wellTests[0];
-                    latestOil = latestTest.oil;
-                    latestWater = latestTest.water;
+                    // Find most recent test not in the future
+                    const validTests = well.wellTests.filter(t => new Date(t.date) <= today);
+                    if (validTests.length > 0) {
+                        const latestTest = validTests[0];
+                        latestOil = latestTest.oil;
+                        latestWater = latestTest.water;
+                    }
                 }
                 
                 allWells.push({
@@ -2243,8 +1989,8 @@ function getTopProducingWells(limit = 10) {
                     wellName: well.name,
                     sheetId: sheetId,
                     batteryName: sheetConfig.name,
-                    oil: latestOil !== null ? Number(latestOil) : 0,
-                    water: latestWater !== null ? Number(latestWater) : 0
+                    oil: latestOil !== null ? Math.round(Number(latestOil) * 100) / 100 : 0,
+                    water: latestWater !== null ? Math.round(Number(latestWater) * 100) / 100 : 0
                 });
             });
         }
@@ -2263,6 +2009,8 @@ function getTopProducingWells(limit = 10) {
  */
 function getRecentWellTests(limit = 10) {
     const allTests = [];
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
     
     Object.keys(appData).forEach(sheetId => {
         const sheet = appData[sheetId];
@@ -2270,18 +2018,25 @@ function getRecentWellTests(limit = 10) {
         
         if (sheet && sheet.wells && sheetConfig) {
             sheet.wells.forEach(well => {
+                // Skip inactive wells
+                if (well.status === 'inactive') return;
+                
                 if (well.wellTests && well.wellTests.length > 0) {
                     well.wellTests.forEach(test => {
                         if (test.date) {
+                            const testDate = new Date(test.date);
+                            // Skip future dates
+                            if (testDate > today) return;
+                            
                             allTests.push({
-                                date: new Date(test.date),
+                                date: testDate,
                                 wellId: well.id,
                                 wellName: well.name,
                                 sheetId: sheetId,
                                 batteryName: sheetConfig.name,
-                                oil: test.oil,
-                                water: test.water,
-                                gas: test.gas
+                                oil: test.oil !== null ? Math.round(test.oil * 100) / 100 : null,
+                                water: test.water !== null ? Math.round(test.water * 100) / 100 : null,
+                                gas: test.gas !== null ? Math.round(Math.max(0, test.gas) * 100) / 100 : null
                             });
                         }
                     });
@@ -2310,6 +2065,9 @@ function getAllActionItems(limit = 15) {
         
         if (sheet && sheet.wells && sheetConfig) {
             sheet.wells.forEach(well => {
+                // Skip inactive wells
+                if (well.status === 'inactive') return;
+                
                 if (well.actionItems && well.actionItems.length > 0) {
                     well.actionItems.forEach(item => {
                         if (item && item.trim()) {
@@ -2457,6 +2215,7 @@ function closeEditModal() {
 
 /**
  * Render chemical program edit form
+ * Note: Using 'edit' prefix for IDs to avoid conflict with display table cell IDs
  */
 function renderChemicalProgramForm(data) {
     const cont = data.continuous || {};
@@ -2469,16 +2228,16 @@ function renderChemicalProgramForm(data) {
             <div class="form-column-header">Truck Treat</div>
             
             <div class="form-row-label">Rate (gal/month)</div>
-            <input type="text" class="edit-form-input" id="chemContRate" value="${cont.rate || ''}" placeholder="-">
-            <input type="text" class="edit-form-input" id="chemTruckRate" value="${truck.rate || ''}" placeholder="-">
+            <input type="text" class="edit-form-input" id="editChemContRate" value="${cont.rate || ''}" placeholder="-">
+            <input type="text" class="edit-form-input" id="editChemTruckRate" value="${truck.rate || ''}" placeholder="-">
             
             <div class="form-row-label">Chems Used</div>
-            <input type="text" class="edit-form-input" id="chemContChems" value="${cont.chems || ''}" placeholder="-">
-            <input type="text" class="edit-form-input" id="chemTruckChems" value="${truck.chems || ''}" placeholder="-">
+            <input type="text" class="edit-form-input" id="editChemContChems" value="${cont.chems || ''}" placeholder="-">
+            <input type="text" class="edit-form-input" id="editChemTruckChems" value="${truck.chems || ''}" placeholder="-">
             
             <div class="form-row-label">PPM</div>
-            <input type="text" class="edit-form-input" id="chemContPPM" value="${cont.ppm || ''}" placeholder="-">
-            <input type="text" class="edit-form-input" id="chemTruckPPM" value="${truck.ppm || ''}" placeholder="-">
+            <input type="text" class="edit-form-input" id="editChemContPPM" value="${cont.ppm || ''}" placeholder="-">
+            <input type="text" class="edit-form-input" id="editChemTruckPPM" value="${truck.ppm || ''}" placeholder="-">
         </div>
     `;
 }
@@ -2825,18 +2584,19 @@ function saveEditedData() {
 
 /**
  * Read chemical program form values
+ * Note: Using 'edit' prefix IDs to match form inputs
  */
 function readChemicalProgramForm() {
     return {
         continuous: {
-            rate: document.getElementById('chemContRate')?.value || '',
-            chems: document.getElementById('chemContChems')?.value || '',
-            ppm: document.getElementById('chemContPPM')?.value || ''
+            rate: document.getElementById('editChemContRate')?.value || '',
+            chems: document.getElementById('editChemContChems')?.value || '',
+            ppm: document.getElementById('editChemContPPM')?.value || ''
         },
         truckTreat: {
-            rate: document.getElementById('chemTruckRate')?.value || '',
-            chems: document.getElementById('chemTruckChems')?.value || '',
-            ppm: document.getElementById('chemTruckPPM')?.value || ''
+            rate: document.getElementById('editChemTruckRate')?.value || '',
+            chems: document.getElementById('editChemTruckChems')?.value || '',
+            ppm: document.getElementById('editChemTruckPPM')?.value || ''
         }
     };
 }

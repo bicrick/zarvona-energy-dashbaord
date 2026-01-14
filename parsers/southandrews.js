@@ -28,14 +28,14 @@ const SouthAndrewsParser = {
     
     // Wells from Well Test pg2
     wellsPg2: [
-        { id: 'cobra-5h', name: 'Cobra 5H', oilCol: 1, waterCol: 2, gasCol: 3 },
-        { id: 'cobra-3012', name: 'Cobra 3012', oilCol: 7, waterCol: 8, gasCol: 9 },
-        { id: 'cobra-3033', name: 'Cobra 3033', oilCol: 13, waterCol: 14, gasCol: 15 },
-        { id: 'fn-3731', name: 'FN 3731', oilCol: 19, waterCol: 20, gasCol: 21 },
-        { id: 'pinnacle-1', name: 'Pinnacle #1', oilCol: 25, waterCol: 26, gasCol: 27 },
-        { id: 'pinnacle-2h', name: 'Pinnacle 2H', oilCol: 31, waterCol: 32, gasCol: 33 },
-        { id: 'sawgrass-2h', name: 'Sawgrass 2H', oilCol: 37, waterCol: 38, gasCol: 39 },
-        { id: 'sawgrass-5h', name: 'Sawgrass 5H', oilCol: 43, waterCol: 44, gasCol: 45 }
+        { id: 'cobra-5h', name: 'Cobra 5H', oilCol: 1, waterCol: 2, gasCol: 3, status: 'active' },
+        { id: 'cobra-3012', name: 'Cobra 3012', oilCol: 7, waterCol: 8, gasCol: 9, status: 'active' },
+        { id: 'cobra-3033', name: 'Cobra 3033', oilCol: 13, waterCol: 14, gasCol: 15, status: 'active' },
+        { id: 'fn-3731', name: 'FN 3731', oilCol: 19, waterCol: 20, gasCol: 21, status: 'active' },
+        { id: 'pinnacle-1', name: 'Pinnacle #1', oilCol: 25, waterCol: 26, gasCol: 27, status: 'active' },
+        { id: 'pinnacle-2h', name: 'Pinnacle 2H', oilCol: 31, waterCol: 32, gasCol: 33, status: 'active' },
+        { id: 'sawgrass-2h', name: 'Sawgrass 2H', oilCol: 37, waterCol: 38, gasCol: 39, status: 'inactive' },  // Inactive per user
+        { id: 'sawgrass-5h', name: 'Sawgrass 5H', oilCol: 43, waterCol: 44, gasCol: 45, status: 'active' }
     ],
     
     parse(workbook) {
@@ -81,7 +81,7 @@ const SouthAndrewsParser = {
         const wells = wellDefs.map(w => ({
             id: w.id,
             name: w.name,
-            status: 'active',
+            status: w.status || 'active',
             wellTests: [],
             production: [],
             chemicalProgram: { continuous: { rate: null, chems: '-', ppm: null }, truckTreat: { rate: null, chems: '-', ppm: null } },
@@ -113,7 +113,7 @@ const SouthAndrewsParser = {
         
         wells.forEach(well => {
             well.wellTests.sort((a, b) => new Date(b.date) - new Date(a.date));
-            well.wellTests = well.wellTests.slice(0, 20);
+            well.wellTests = well.wellTests.slice(0, 60);  // Increased from 20
             well.production.sort((a, b) => a.date - b.date);
         });
         
@@ -157,7 +157,8 @@ const SouthAndrewsParser = {
     parseNumber(val) {
         if (val === null || val === undefined || val === '') return null;
         const num = parseFloat(val);
-        return isNaN(num) ? null : num;
+        if (isNaN(num)) return null;
+        return num < 0 ? 0 : num;
     }
 };
 

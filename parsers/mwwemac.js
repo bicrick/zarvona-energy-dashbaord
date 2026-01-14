@@ -10,15 +10,16 @@ const MWWemacParser = {
     expectedFileName: 'Mw-Wemac-Sabrina-Berkley.xlsx',
     
     // Wells from Well_Test sheet (6-column spacing, no "24HR Test" suffix)
+    // Note: Many wells in this battery are inactive per user
     wells: [
-        { id: 'berkley-1', name: 'Berkley #1', oilCol: 1, waterCol: 2, gasCol: 3 },
-        { id: 'berkley-4', name: 'Berkley #4', oilCol: 7, waterCol: 8, gasCol: 9 },
-        { id: 'berkley-5', name: 'Berkley #5', oilCol: 13, waterCol: 14, gasCol: 15 },
-        { id: 'berkley-6', name: 'Berkley #6', oilCol: 19, waterCol: 20, gasCol: 21 },
-        { id: 'sabrina-5', name: 'Sabrina #5', oilCol: 25, waterCol: 26, gasCol: 27 },
-        { id: 'sabrina-7', name: 'Sabrina #7', oilCol: 31, waterCol: 32, gasCol: 33 },
-        { id: 'sabrina-3', name: 'Sabrina #3', oilCol: 37, waterCol: 38, gasCol: 39 },
-        { id: 'sabrina-12', name: 'Sabrina #12', oilCol: 43, waterCol: 44, gasCol: 45 }
+        { id: 'berkley-1', name: 'Berkley #1', oilCol: 1, waterCol: 2, gasCol: 3, status: 'active' },
+        { id: 'berkley-4', name: 'Berkley #4', oilCol: 7, waterCol: 8, gasCol: 9, status: 'inactive' },  // Inactive per user
+        { id: 'berkley-5', name: 'Berkley #5', oilCol: 13, waterCol: 14, gasCol: 15, status: 'active' },
+        { id: 'berkley-6', name: 'Berkley #6', oilCol: 19, waterCol: 20, gasCol: 21, status: 'active' },
+        { id: 'sabrina-5', name: 'Sabrina #5', oilCol: 25, waterCol: 26, gasCol: 27, status: 'inactive' },  // Inactive per user
+        { id: 'sabrina-7', name: 'Sabrina #7', oilCol: 31, waterCol: 32, gasCol: 33, status: 'inactive' },  // Inactive per user
+        { id: 'sabrina-3', name: 'Sabrina #3', oilCol: 37, waterCol: 38, gasCol: 39, status: 'inactive' },  // Inactive per user
+        { id: 'sabrina-12', name: 'Sabrina #12', oilCol: 43, waterCol: 44, gasCol: 45, status: 'inactive' }  // Inactive per user
     ],
     
     parse(workbook) {
@@ -46,7 +47,7 @@ const MWWemacParser = {
         const wells = this.wells.map(w => ({
             id: w.id,
             name: w.name,
-            status: 'active',
+            status: w.status || 'active',
             wellTests: [],
             production: [],
             chemicalProgram: { continuous: { rate: null, chems: '-', ppm: null }, truckTreat: { rate: null, chems: '-', ppm: null } },
@@ -78,7 +79,7 @@ const MWWemacParser = {
         
         wells.forEach(well => {
             well.wellTests.sort((a, b) => new Date(b.date) - new Date(a.date));
-            well.wellTests = well.wellTests.slice(0, 20);
+            well.wellTests = well.wellTests.slice(0, 60);  // Increased from 20
             well.production.sort((a, b) => a.date - b.date);
         });
         
@@ -99,7 +100,8 @@ const MWWemacParser = {
     parseNumber(val) {
         if (val === null || val === undefined || val === '') return null;
         const num = parseFloat(val);
-        return isNaN(num) ? null : num;
+        if (isNaN(num)) return null;
+        return num < 0 ? 0 : num;
     }
 };
 

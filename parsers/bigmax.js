@@ -11,17 +11,17 @@ const BigMaxParser = {
     
     // Wells from Well Test sheet (6-column spacing)
     wells: [
-        { id: 'bigmax-1-1', name: 'Big Max 1 #1', oilCol: 1, waterCol: 2, gasCol: 3 },
-        { id: 'bigmax-4-1', name: 'Big Max 4 #1', oilCol: 7, waterCol: 8, gasCol: 9 },
-        { id: 'bigmax-5-2', name: 'Big Max 5 #2', oilCol: 13, waterCol: 14, gasCol: 15 },
-        { id: 'bigmax-11-1', name: 'Big Max 11 #1', oilCol: 19, waterCol: 20, gasCol: 21 },
-        { id: 'bigmax-11-2', name: 'Big Max 11 #2', oilCol: 25, waterCol: 26, gasCol: 27 },
-        { id: 'bigmax-12-1', name: 'Big Max 12 #1', oilCol: 31, waterCol: 32, gasCol: 33 },
-        { id: 'bigmax-12-2', name: 'Big Max 12 #2', oilCol: 37, waterCol: 38, gasCol: 39 },
-        { id: 'bigmax-13-3', name: 'Big Max 13 #3', oilCol: 43, waterCol: 44, gasCol: 45 },
-        { id: 'bigmax-13-5', name: 'Big Max 13 #5', oilCol: 49, waterCol: 50, gasCol: 51 },
-        { id: 'bigmax-14-4', name: 'Big Max 14 #4', oilCol: 55, waterCol: 56, gasCol: 57 },
-        { id: 'bigmax-swd', name: 'Big Max 12-101 SWD', oilCol: 61, waterCol: 62, gasCol: 63 }
+        { id: 'bigmax-1-1', name: 'Big Max 1 #1', oilCol: 1, waterCol: 2, gasCol: 3, status: 'active' },
+        { id: 'bigmax-4-1', name: 'Big Max 4 #1', oilCol: 7, waterCol: 8, gasCol: 9, status: 'active' },
+        { id: 'bigmax-5-2', name: 'Big Max 5 #2', oilCol: 13, waterCol: 14, gasCol: 15, status: 'active' },
+        { id: 'bigmax-11-1', name: 'Big Max 11 #1', oilCol: 19, waterCol: 20, gasCol: 21, status: 'active' },
+        { id: 'bigmax-11-2', name: 'Big Max 11 #2', oilCol: 25, waterCol: 26, gasCol: 27, status: 'active' },
+        { id: 'bigmax-12-1', name: 'Big Max 12 #1', oilCol: 31, waterCol: 32, gasCol: 33, status: 'active' },
+        { id: 'bigmax-12-2', name: 'Big Max 12 #2', oilCol: 37, waterCol: 38, gasCol: 39, status: 'active' },
+        { id: 'bigmax-13-3', name: 'Big Max 13 #3', oilCol: 43, waterCol: 44, gasCol: 45, status: 'active' },
+        { id: 'bigmax-13-5', name: 'Big Max 13 #5', oilCol: 49, waterCol: 50, gasCol: 51, status: 'active' },
+        { id: 'bigmax-14-4', name: 'Big Max 14 #4', oilCol: 55, waterCol: 56, gasCol: 57, status: 'active' },
+        { id: 'bigmax-swd', name: 'Big Max 12-101 SWD', oilCol: 61, waterCol: 62, gasCol: 63, status: 'active', wellType: 'swd' }  // SWD well
     ],
     
     parse(workbook) {
@@ -53,7 +53,8 @@ const BigMaxParser = {
         const wells = this.wells.map(w => ({
             id: w.id,
             name: w.name,
-            status: 'active',
+            status: w.status || 'active',
+            wellType: w.wellType || 'production',
             wellTests: [],
             production: [],
             chemicalProgram: { continuous: { rate: null, chems: '-', ppm: null }, truckTreat: { rate: null, chems: '-', ppm: null } },
@@ -85,7 +86,7 @@ const BigMaxParser = {
         
         wells.forEach(well => {
             well.wellTests.sort((a, b) => new Date(b.date) - new Date(a.date));
-            well.wellTests = well.wellTests.slice(0, 20);
+            well.wellTests = well.wellTests.slice(0, 60);  // Increased from 20
             well.production.sort((a, b) => a.date - b.date);
         });
         
@@ -130,7 +131,8 @@ const BigMaxParser = {
     parseNumber(val) {
         if (val === null || val === undefined || val === '') return null;
         const num = parseFloat(val);
-        return isNaN(num) ? null : num;
+        if (isNaN(num)) return null;
+        return num < 0 ? 0 : num;
     }
 };
 

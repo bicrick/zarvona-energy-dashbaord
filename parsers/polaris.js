@@ -11,8 +11,8 @@ const PolarisParser = {
     
     // Wells from Well Test (4-column spacing, different from standard)
     wells: [
-        { id: 'polaris-1', name: 'Polaris #1', oilCol: 1, waterCol: 2, gasCol: 3 },
-        { id: 'polaris-2', name: 'Polaris #2', oilCol: 5, waterCol: 6, gasCol: 7 }
+        { id: 'polaris-1', name: 'Polaris #1', oilCol: 1, waterCol: 2, gasCol: 3, status: 'active' },
+        { id: 'polaris-2', name: 'Polaris #2', oilCol: 5, waterCol: 6, gasCol: 7, status: 'inactive' }  // Inactive per user
     ],
     
     parse(workbook) {
@@ -44,7 +44,7 @@ const PolarisParser = {
         const wells = this.wells.map(w => ({
             id: w.id,
             name: w.name,
-            status: 'active',
+            status: w.status || 'active',
             wellTests: [],
             production: [],
             chemicalProgram: { continuous: { rate: null, chems: '-', ppm: null }, truckTreat: { rate: null, chems: '-', ppm: null } },
@@ -76,7 +76,7 @@ const PolarisParser = {
         
         wells.forEach(well => {
             well.wellTests.sort((a, b) => new Date(b.date) - new Date(a.date));
-            well.wellTests = well.wellTests.slice(0, 20);
+            well.wellTests = well.wellTests.slice(0, 60);  // Increased from 20
             well.production.sort((a, b) => a.date - b.date);
         });
         
@@ -121,7 +121,8 @@ const PolarisParser = {
     parseNumber(val) {
         if (val === null || val === undefined || val === '') return null;
         const num = parseFloat(val);
-        return isNaN(num) ? null : num;
+        if (isNaN(num)) return null;
+        return num < 0 ? 0 : num;
     }
 };
 

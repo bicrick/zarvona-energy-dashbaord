@@ -2,6 +2,7 @@
  * Shusa Gauge Sheet Parser
  * Expected file: Shusa Gauge Sheet.xlsx
  * Has two Well Test sheets with many wells
+ * Note: Most wells only have OIL and WATER columns (no GAS)
  */
 
 const ShusaParser = {
@@ -9,32 +10,56 @@ const ShusaParser = {
     name: 'Shusa',
     expectedFileName: 'Shusa Gauge Sheet.xlsx',
     
-    // Wells from Well Test 20 RB Link (4-column spacing)
+    // Wells from Well Test 20 RB Link (4-column spacing: OIL, WATER, 2x monthly avg)
+    // Note: Most wells do NOT have gas columns
     wells20RB: [
-        { id: 'shusa-20-1', name: 'Shusa 20 #1', oilCol: 1, waterCol: 2, gasCol: 3 },
-        { id: 'shusa-20-2', name: 'Shusa 20 #2', oilCol: 5, waterCol: 6, gasCol: 7 },
-        { id: 'shusa-20-3', name: 'Shusa 20 #3', oilCol: 9, waterCol: 10, gasCol: 11 },
-        { id: 'shusa-20-4', name: 'Shusa 20 #4', oilCol: 13, waterCol: 14, gasCol: 15 },
-        { id: 'shusa-20-5', name: 'Shusa 20 #5', oilCol: 17, waterCol: 18, gasCol: 19 },
-        { id: 'rosebud-20-1', name: 'Rosebud 20 #1', oilCol: 21, waterCol: 22, gasCol: 23 },
-        { id: 'rosebud-20-3', name: 'Rosebud 20 #3', oilCol: 25, waterCol: 26, gasCol: 27 },
-        { id: 'rosebud-20-4', name: 'Rosebud 20 #4', oilCol: 29, waterCol: 30, gasCol: 31 },
-        { id: 'link-1', name: 'Link #1', oilCol: 33, waterCol: 34, gasCol: 35 },
-        { id: 'link-3', name: 'Link #3', oilCol: 37, waterCol: 38, gasCol: 39 },
-        { id: 'link-4', name: 'Link #4', oilCol: 41, waterCol: 42, gasCol: 43 }
+        { id: 'shusa-20-1', name: 'Shusa 20 #1', oilCol: 1, waterCol: 2, gasCol: null },
+        { id: 'shusa-20-2', name: 'Shusa 20 #2', oilCol: 5, waterCol: 6, gasCol: null },
+        { id: 'shusa-20-3', name: 'Shusa 20 #3', oilCol: 9, waterCol: 10, gasCol: null },
+        { id: 'shusa-20-4', name: 'Shusa 20 #4', oilCol: 13, waterCol: 14, gasCol: null },
+        { id: 'shusa-20-5', name: 'Shusa 20 #5', oilCol: 17, waterCol: 18, gasCol: null },
+        { id: 'rosebud-20-1', name: 'Rosebud 20 #1', oilCol: 21, waterCol: 22, gasCol: null },
+        { id: 'rosebud-20-3', name: 'Rosebud 20 #3', oilCol: 25, waterCol: 26, gasCol: null },
+        { id: 'rosebud-20-4', name: 'Rosebud 20 #4', oilCol: 29, waterCol: 30, gasCol: null },
+        { id: 'rosebud-yates-1', name: 'Rosebud-Yates #1', oilCol: 33, waterCol: 34, gasCol: 35 },  // Only well with gas in this sheet
+        { id: 'link-2', name: 'Link #2', oilCol: 39, waterCol: 40, gasCol: null },
+        { id: 'link-3', name: 'Link #3', oilCol: 43, waterCol: 44, gasCol: null },
+        { id: 'link-4', name: 'Link #4', oilCol: 47, waterCol: 48, gasCol: null },
+        { id: 'link-5', name: 'Link #5', oilCol: 51, waterCol: 52, gasCol: null },
+        { id: 'link-6', name: 'Link #6', oilCol: 55, waterCol: 56, gasCol: null }
     ],
     
-    // Wells from Well Test 14 15 (4-column spacing, starts at col 4)
+    // Wells from Well Test 14 15 (4-column spacing: OIL, WATER, 2x monthly avg)
+    // Note: None of these wells have gas columns
     wells1415: [
-        { id: 'shusa-14-1', name: 'Shusa 14 #1', oilCol: 4, waterCol: 5, gasCol: 6 },
-        { id: 'shusa-14-2', name: 'Shusa 14 #2', oilCol: 8, waterCol: 9, gasCol: 10 },
-        { id: 'shusa-14-3', name: 'Shusa 14 #3', oilCol: 12, waterCol: 13, gasCol: 14 },
-        { id: 'shusa-14-4', name: 'Shusa 14 #4', oilCol: 16, waterCol: 17, gasCol: 18 },
-        { id: 'shusa-14-5', name: 'Shusa 14 #5', oilCol: 20, waterCol: 21, gasCol: 22 },
-        { id: 'shusa-15-1', name: 'Shusa 15 #1', oilCol: 48, waterCol: 49, gasCol: 50 },
-        { id: 'shusa-15-2x', name: 'Shusa 15 #2X', oilCol: 52, waterCol: 53, gasCol: 54 },
-        { id: 'shusa-15-3', name: 'Shusa 15 #3', oilCol: 56, waterCol: 57, gasCol: 58 },
-        { id: 'shusa-15-4', name: 'Shusa 15 #4', oilCol: 60, waterCol: 61, gasCol: 62 }
+        // Shusa 14 series
+        { id: 'shusa-14-1', name: 'Shusa 14 #1', oilCol: 4, waterCol: 5, gasCol: null },
+        { id: 'shusa-14-2', name: 'Shusa 14 #2', oilCol: 8, waterCol: 9, gasCol: null },
+        { id: 'shusa-14-3', name: 'Shusa 14 #3', oilCol: 12, waterCol: 13, gasCol: null },
+        { id: 'shusa-14-4', name: 'Shusa 14 #4', oilCol: 16, waterCol: 17, gasCol: null },
+        { id: 'shusa-14-5', name: 'Shusa 14 #5', oilCol: 20, waterCol: 21, gasCol: null },
+        { id: 'shusa-14-6', name: 'Shusa 14 #6', oilCol: 24, waterCol: 25, gasCol: null },
+        { id: 'shusa-14-7', name: 'Shusa 14 #7', oilCol: 28, waterCol: 29, gasCol: null },
+        { id: 'shusa-14-8', name: 'Shusa 14 #8', oilCol: 32, waterCol: 33, gasCol: null },
+        { id: 'shusa-14-9', name: 'Shusa 14 #9', oilCol: 36, waterCol: 37, gasCol: null },
+        { id: 'shusa-14-10', name: 'Shusa 14 #10', oilCol: 40, waterCol: 41, gasCol: null },
+        { id: 'shusa-14-12', name: 'Shusa 14 #12', oilCol: 44, waterCol: 45, gasCol: null },  // Note: #11 doesn't exist
+        // Shusa 15 series
+        { id: 'shusa-15-1', name: 'Shusa 15 #1', oilCol: 48, waterCol: 49, gasCol: null },
+        { id: 'shusa-15-2', name: 'Shusa 15 #2', oilCol: 52, waterCol: 53, gasCol: null },  // Sheet shows "15 #2X" but user says same as 15 #2
+        { id: 'shusa-15-3', name: 'Shusa 15 #3', oilCol: 56, waterCol: 57, gasCol: null },
+        { id: 'shusa-15-4', name: 'Shusa 15 #4', oilCol: 60, waterCol: 61, gasCol: null },
+        { id: 'shusa-15-6', name: 'Shusa 15 #6', oilCol: 64, waterCol: 65, gasCol: null },  // Note: #5 doesn't exist
+        { id: 'shusa-15-7', name: 'Shusa 15 #7', oilCol: 68, waterCol: 69, gasCol: null },
+        { id: 'shusa-15-8', name: 'Shusa 15 #8', oilCol: 72, waterCol: 73, gasCol: null },
+        { id: 'shusa-15-9', name: 'Shusa 15 #9', oilCol: 76, waterCol: 77, gasCol: null },
+        { id: 'shusa-15-10', name: 'Shusa 15 #10', oilCol: 80, waterCol: 81, gasCol: null },
+        { id: 'shusa-15-11', name: 'Shusa 15 #11', oilCol: 84, waterCol: 85, gasCol: null },
+        { id: 'shusa-15-12', name: 'Shusa 15 #12', oilCol: 88, waterCol: 89, gasCol: null },
+        { id: 'shusa-15-13', name: 'Shusa 15 #13', oilCol: 92, waterCol: 93, gasCol: null },
+        { id: 'shusa-15-14', name: 'Shusa 15 #14', oilCol: 96, waterCol: 97, gasCol: null },
+        { id: 'shusa-15-15', name: 'Shusa 15 #15', oilCol: 100, waterCol: 101, gasCol: null },
+        { id: 'shusa-15-16', name: 'Shusa 15 #16', oilCol: 104, waterCol: 105, gasCol: null }
     ],
     
     parse(workbook) {
@@ -100,7 +125,8 @@ const ShusaParser = {
             wellDefs.forEach((wellDef, idx) => {
                 const oil = this.parseNumber(row[wellDef.oilCol]);
                 const water = this.parseNumber(row[wellDef.waterCol]);
-                const gas = this.parseNumber(row[wellDef.gasCol]);
+                // Only parse gas if the well has a gas column defined
+                const gas = wellDef.gasCol !== null ? this.parseNumber(row[wellDef.gasCol]) : null;
                 
                 if (oil !== null || water !== null || gas !== null) {
                     wells[idx].wellTests.push({ date: dateStr, oil, water, gas });
@@ -111,7 +137,7 @@ const ShusaParser = {
         
         wells.forEach(well => {
             well.wellTests.sort((a, b) => new Date(b.date) - new Date(a.date));
-            well.wellTests = well.wellTests.slice(0, 20);
+            well.wellTests = well.wellTests.slice(0, 60);  // Increased from 20 to 60
             well.production.sort((a, b) => a.date - b.date);
         });
         
@@ -155,7 +181,8 @@ const ShusaParser = {
     parseNumber(val) {
         if (val === null || val === undefined || val === '') return null;
         const num = parseFloat(val);
-        return isNaN(num) ? null : num;
+        if (isNaN(num)) return null;
+        return num < 0 ? 0 : num;
     }
 };
 
