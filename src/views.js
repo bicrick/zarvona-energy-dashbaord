@@ -5,6 +5,48 @@ import { initializeEditHandlers } from './edit-modal.js';
 import { renderDashboard } from './dashboard.js';
 import { hasUploadedData } from './data-aggregation.js';
 
+// CSV Download utility functions
+function downloadCSV(data, headers, filename) {
+    if (!data || data.length === 0) {
+        alert('No data available to download.');
+        return;
+    }
+
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+
+    data.forEach(row => {
+        const values = headers.map(header => {
+            const value = row[header.toLowerCase().replace(/[^a-z0-9]/g, '')] ?? row[header] ?? '';
+            // Escape quotes and wrap in quotes if contains comma, quote, or newline
+            const escaped = String(value).replace(/"/g, '""');
+            return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
+                ? `"${escaped}"` 
+                : escaped;
+        });
+        csvRows.push(values.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function formatDateForCSV(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US');
+}
+
 export function showView(viewName) {
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
 
@@ -91,6 +133,102 @@ export function showWellView(sheetId, wellId) {
     renderPressureCharts(well.pressureReadings || []);
 
     initializeEditHandlers();
+    initializeCSVDownloadHandlers(well);
+}
+
+function initializeCSVDownloadHandlers(well) {
+    const wellName = well.name.replace(/[^a-zA-Z0-9]/g, '_');
+    
+    // Production Chart download
+    const btnDownloadProduction = document.getElementById('btnDownloadProduction');
+    if (btnDownloadProduction) {
+        const newBtn = btnDownloadProduction.cloneNode(true);
+        btnDownloadProduction.parentNode.replaceChild(newBtn, btnDownloadProduction);
+        
+        newBtn.addEventListener('click', () => {
+            // Use well.production - the same data source as the charts
+            const production = well.production || [];
+            
+            // Get the current date range from the date selectors
+            const startDateInput = document.getElementById('productionStartDate');
+            const endDateInput = document.getElementById('productionEndDate');
+            
+            let filteredData = production.filter(item => item.date);
+            
+            // Apply date range filter if set
+            if (startDateInput && startDateInput.value) {
+                const startDate = new Date(startDateInput.value);
+                filteredData = filteredData.filter(item => new Date(item.date) >= startDate);
+            }
+            if (endDateInput && endDateInput.value) {
+                const endDate = new Date(endDateInput.value);
+                endDate.setHours(23, 59, 59, 999);
+                filteredData = filteredData.filter(item => new Date(item.date) <= endDate);
+            }
+            
+            // Sort by date ascending for the CSV
+            filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            const csvData = filteredData.map(item => ({
+                'date': formatDateForCSV(item.date),
+                'oilbbl': item.oil !== null && item.oil !== undefined ? Math.round(item.oil * 100) / 100 : '',
+                'waterbbl': item.water !== null && item.water !== undefined ? Math.round(item.water * 100) / 100 : '',
+                'gasmcf': item.gas !== null && item.gas !== undefined ? Math.round(Math.max(0, item.gas) * 100) / 100 : ''
+            }));
+            
+            downloadCSV(csvData, ['Date', 'Oil (bbl)', 'Water (bbl)', 'Gas (mcf)'], `${wellName}_Production.csv`);
+        });
+    }
+    
+    // Well Test Table download
+    const btnDownloadWellTests = document.getElementById('btnDownloadWellTests');
+    if (btnDownloadWellTests) {
+        // Remove existing listeners by cloning
+        const newBtn = btnDownloadWellTests.cloneNode(true);
+        btnDownloadWellTests.parentNode.replaceChild(newBtn, btnDownloadWellTests);
+        
+        newBtn.addEventListener('click', () => {
+            const wellTests = well.wellTests || [];
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+            
+            const validTests = wellTests.filter(test => {
+                const testDate = new Date(test.date);
+                return testDate <= today;
+            });
+            
+            const csvData = validTests.map(test => ({
+                'date': formatDateForCSV(test.date),
+                'oilbbl': test.oil !== null ? Math.round(test.oil * 100) / 100 : '',
+                'waterbbl': test.water !== null ? Math.round(test.water * 100) / 100 : '',
+                'gasmcf': test.gas !== null ? Math.round(Math.max(0, test.gas) * 100) / 100 : ''
+            }));
+            
+            downloadCSV(csvData, ['Date', 'Oil (bbl)', 'Water (bbl)', 'Gas (mcf)'], `${wellName}_Well_Tests.csv`);
+        });
+    }
+    
+    // Pressure Readings download
+    const btnDownloadPressure = document.getElementById('btnDownloadPressure');
+    if (btnDownloadPressure) {
+        // Remove existing listeners by cloning
+        const newBtn = btnDownloadPressure.cloneNode(true);
+        btnDownloadPressure.parentNode.replaceChild(newBtn, btnDownloadPressure);
+        
+        newBtn.addEventListener('click', () => {
+            const readings = well.pressureReadings || [];
+            
+            const csvData = readings.map(r => ({
+                'date': formatDateForCSV(r.date),
+                'casingpsi': r.casingPsi || '',
+                'tubingpsi': r.tubingPsi || '',
+                'flowlinepsi': r.flowlinePsi || '',
+                'injvol': r.injVol || ''
+            }));
+            
+            downloadCSV(csvData, ['Date', 'Casing PSI', 'Tubing PSI', 'Flowline PSI', 'Inj Vol'], `${wellName}_Pressure_Readings.csv`);
+        });
+    }
 }
 
 function renderWellsGrid(sheetId) {

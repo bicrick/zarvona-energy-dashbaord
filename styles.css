@@ -2418,6 +2418,47 @@ tbody tr:nth-child(even) {
     flex-shrink: 0;
 }
 
+/* Card Header Actions Container */
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Download CSV Button */
+.btn-download-csv {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-download-csv:hover {
+    background: var(--bg-secondary);
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+}
+
+.btn-download-csv svg {
+    flex-shrink: 0;
+}
+
+.btn-download-csv .btn-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 /* ============================================================================
    Edit Modal
    ============================================================================ */

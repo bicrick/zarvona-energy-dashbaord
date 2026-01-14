@@ -3,6 +3,7 @@ import { saveDataToStorage } from './storage.js';
 import { refreshNavigation } from './navigation.js';
 import { showGaugeSheetView } from './views.js';
 import { PARSERS } from './parsers/index.js';
+import { mergeSheetData } from './data-merge.js';
 
 export function initializeUploadHandlers() {
     const uploadArea = document.getElementById('uploadArea');
@@ -83,7 +84,8 @@ async function processUploadedFile(file) {
         progressFill.style.width = '90%';
         progressText.textContent = 'Saving...';
 
-        appState.appData[appState.currentSheet] = data;
+        const existingData = appState.appData[appState.currentSheet];
+        appState.appData[appState.currentSheet] = mergeSheetData(existingData, data);
         saveDataToStorage();
 
         progressFill.style.width = '100%';
@@ -187,7 +189,8 @@ async function processBulkUpload(files) {
             const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
             const data = parser.parse(workbook);
 
-            appState.appData[sheetConfig.id] = data;
+            const existingData = appState.appData[sheetConfig.id];
+            appState.appData[sheetConfig.id] = mergeSheetData(existingData, data);
 
             resultItems.push({
                 name: sheetConfig.name,
@@ -265,7 +268,8 @@ export async function processBulkUploadFromDashboard(files) {
             const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
             const data = parser.parse(workbook);
 
-            appState.appData[sheetConfig.id] = data;
+            const existingData = appState.appData[sheetConfig.id];
+            appState.appData[sheetConfig.id] = mergeSheetData(existingData, data);
             successCount++;
         } catch (error) {
             console.error(`Error processing ${file.name}:`, error);
