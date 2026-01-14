@@ -141,8 +141,53 @@ body {
     padding: 12px 18px;
 }
 
-/* Keep Home section items visible as icons in collapsed state */
-.sidebar.collapsed #home-section .nav-section-children {
+/* Clickable sections (Home) show as icon in collapsed state */
+.sidebar.collapsed .nav-section-clickable .nav-section-header {
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    border-bottom: none;
+    background: transparent;
+}
+
+.sidebar.collapsed .nav-section-clickable .nav-section-header:hover {
+    background: var(--bg-hover);
+}
+
+.sidebar.collapsed .nav-section-clickable .nav-section-header.active {
+    background: var(--bg-tertiary);
+    border-left: 3px solid var(--text-secondary);
+}
+
+.sidebar.collapsed .nav-section-clickable .nav-section-icon {
+    display: flex;
+    margin-right: 0;
+}
+
+.sidebar.collapsed .nav-section-clickable .nav-section-title {
+    display: none;
+}
+
+/* Tooltip for collapsed clickable sections */
+.sidebar.collapsed .nav-section-clickable .nav-section-header[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    z-index: 100;
+}
+
+/* Keep Explore section items visible as icons in collapsed state */
+.sidebar.collapsed #explore-section .nav-section-children {
     display: block !important;
 }
 
@@ -290,7 +335,7 @@ body {
     border-radius: 3px;
 }
 
-/* Nav Sections (Home, Wells) */
+/* Nav Sections (Home, Explore, Wells) */
 .nav-section {
     margin-bottom: 0;
 }
@@ -308,6 +353,7 @@ body {
     user-select: none;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-secondary);
+    position: relative;
 }
 
 .nav-section:first-child .nav-section-header {
@@ -316,6 +362,34 @@ body {
 
 .nav-section-header:hover {
     background: var(--bg-card);
+}
+
+/* Active state for clickable section headers (like Home) */
+.nav-section-clickable .nav-section-header {
+    border-left: 3px solid transparent;
+}
+
+.nav-section-header.active {
+    background: var(--bg-tertiary);
+    border-left-color: var(--text-secondary);
+}
+
+.nav-section-header.active .nav-section-title {
+    color: var(--text-primary);
+}
+
+/* Section icon (hidden by default, shown in collapsed state) */
+.nav-section-icon {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 10px;
+    color: var(--text-muted);
+}
+
+.nav-section-header.active .nav-section-icon {
+    color: var(--text-secondary);
 }
 
 .nav-section-title {
@@ -732,17 +806,89 @@ body {
     display: grid;
     grid-template-columns: 1fr 280px;
     gap: 20px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .aggregate-chart-layout .aggregate-chart-card {
     min-width: 0;
 }
 
+/* Chart Controls Container (aggregation + explorer) */
+.chart-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Chart Aggregation Panel */
+.chart-aggregation {
+    padding: 16px;
+}
+
+.aggregation-header {
+    margin-bottom: 12px;
+}
+
+.aggregation-header h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.aggregation-options {
+    display: flex;
+    gap: 8px;
+}
+
+.aggregation-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.aggregation-option:hover {
+    background: var(--bg-card);
+    border-color: var(--text-muted);
+}
+
+.aggregation-option input {
+    display: none;
+}
+
+.aggregation-option span {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.aggregation-option:has(input:checked) {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.aggregation-option:has(input:checked) span {
+    color: white;
+}
+
 /* Chart Explorer Panel */
 .chart-explorer {
     padding: 16px;
-    max-height: 600px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-explorer .explorer-batteries {
+    flex: 1;
     overflow-y: auto;
 }
 
@@ -1775,6 +1921,22 @@ tbody tr:nth-child(even) {
     margin-top: 6px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+/* Clickable stat cards */
+.stat-card-clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.stat-card-clickable:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.stat-card-clickable:active {
+    transform: translateY(0);
 }
 
 /* Dashboard Main Grid */

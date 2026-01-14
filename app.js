@@ -50,6 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeThemeToggle();
     updateWelcomeStats();
     showView('welcome');
+    
+    // Set Home as active on initial load
+    const homeNav = document.getElementById('nav-dashboard');
+    if (homeNav) {
+        homeNav.classList.add('active');
+    }
 });
 
 function initializeLogoHandler() {
@@ -57,15 +63,13 @@ function initializeLogoHandler() {
     if (logoLink) {
         logoLink.addEventListener('click', (e) => {
             e.preventDefault();
-            // Clear active state from nav items
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             // Reset current selection
             currentSheet = null;
             currentWell = null;
             // Show welcome/home view and refresh dashboard
             showView('welcome');
             updateWelcomeStats();
-            // Set Operations Dashboard as active
+            // Set Home section as active
             const dashboardNav = document.getElementById('nav-dashboard');
             if (dashboardNav) {
                 setActiveNavItem(dashboardNav);
@@ -90,9 +94,12 @@ function initializeHamburgerToggle() {
             localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
         });
         
-        // Restore collapsed state from localStorage
+        // Restore collapsed state from localStorage, default to collapsed
         const savedState = localStorage.getItem('sidebarCollapsed');
-        if (savedState === 'true') {
+        if (savedState === 'false') {
+            sidebar.classList.remove('collapsed');
+        } else {
+            // Default to collapsed (first visit or explicitly collapsed)
             sidebar.classList.add('collapsed');
         }
     }
@@ -104,22 +111,24 @@ function initializeHamburgerToggle() {
 
 /**
  * Initialize theme from localStorage or system preference
+ * Supports three modes: 'light', 'dark', 'system'
  */
 function initializeTheme() {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const savedThemeMode = localStorage.getItem(THEME_STORAGE_KEY);
     
-    if (savedTheme) {
-        // Use saved preference
-        document.documentElement.setAttribute('data-theme', savedTheme);
+    if (savedThemeMode === 'light' || savedThemeMode === 'dark') {
+        // User has explicitly chosen light or dark
+        document.documentElement.setAttribute('data-theme', savedThemeMode);
     } else {
-        // Check system preference
+        // No preference or 'system' - follow system preference
         applySystemTheme();
     }
     
     // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        // Only auto-switch if user hasn't set a manual preference
-        if (!localStorage.getItem(THEME_STORAGE_KEY)) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        const currentMode = localStorage.getItem(THEME_STORAGE_KEY);
+        // Only auto-switch if user is in 'system' mode
+        if (!currentMode || currentMode === 'system') {
             applySystemTheme();
         }
     });
@@ -133,7 +142,6 @@ function initializeTheme() {
 function applySystemTheme() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    updateThemeToggleLabel();
 }
 
 /**
@@ -147,26 +155,60 @@ function initializeThemeToggle() {
 }
 
 /**
- * Toggle between light and dark themes
+ * Toggle between light, dark, and system themes
+ * Cycle: system -> light -> dark -> system
  */
 function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    const currentMode = localStorage.getItem(THEME_STORAGE_KEY) || 'system';
+    let newMode;
     
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    // Cycle through modes
+    if (currentMode === 'system') {
+        newMode = 'light';
+    } else if (currentMode === 'light') {
+        newMode = 'dark';
+    } else {
+        newMode = 'system';
+    }
+    
+    // Apply the new mode
+    if (newMode === 'system') {
+        localStorage.setItem(THEME_STORAGE_KEY, 'system');
+        applySystemTheme();
+    } else {
+        localStorage.setItem(THEME_STORAGE_KEY, newMode);
+        document.documentElement.setAttribute('data-theme', newMode);
+    }
     
     updateThemeToggleLabel();
 }
 
 /**
- * Update the toggle button label based on current theme
+ * Update the toggle button label and icon based on current theme mode
  */
 function updateThemeToggleLabel() {
     const label = document.querySelector('.theme-toggle-label');
+    const iconSun = document.querySelector('.theme-toggle .icon-sun');
+    const iconMoon = document.querySelector('.theme-toggle .icon-moon');
+    const iconSystem = document.querySelector('.theme-toggle .icon-system');
+    
+    const currentMode = localStorage.getItem(THEME_STORAGE_KEY) || 'system';
+    
     if (label) {
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-        label.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        if (currentMode === 'system') {
+            label.textContent = 'System';
+        } else if (currentMode === 'light') {
+            label.textContent = 'Light';
+        } else {
+            label.textContent = 'Dark';
+        }
+    }
+    
+    // Update icon visibility
+    if (iconSun && iconMoon && iconSystem) {
+        iconSun.style.display = currentMode === 'light' ? 'block' : 'none';
+        iconMoon.style.display = currentMode === 'dark' ? 'block' : 'none';
+        iconSystem.style.display = currentMode === 'system' ? 'block' : 'none';
     }
 }
 
@@ -218,18 +260,59 @@ function initializeNavigation() {
     const navTree = document.getElementById('navTree');
     navTree.innerHTML = '';
     
-    // Create Home section
-    const homeSection = createNavSection('Home', 'home-section', [
-        { id: 'nav-dashboard', label: 'Operations Dashboard', icon: 'dashboard', action: () => { showView('welcome'); updateWelcomeStats(); } },
+    // Create Home section (clickable header, no children)
+    const homeSection = createClickableSection('Home', 'home-section', 'nav-dashboard', () => {
+        showView('welcome');
+        updateWelcomeStats();
+    });
+    navTree.appendChild(homeSection);
+    
+    // Create Explore section with charts
+    const exploreSection = createNavSection('Explore', 'explore-section', [
         { id: 'nav-oil-chart', label: 'Oil Production', icon: 'oil', action: () => showOilChartView() },
         { id: 'nav-water-chart', label: 'Water Consumption', icon: 'water', action: () => showWaterChartView() },
         { id: 'nav-gas-chart', label: 'Gas Production', icon: 'gas', action: () => showGasChartView() }
     ]);
-    navTree.appendChild(homeSection);
+    navTree.appendChild(exploreSection);
     
     // Create Wells section
     const wellsSection = createWellsSection();
     navTree.appendChild(wellsSection);
+}
+
+/**
+ * Create a clickable section header (no dropdown, just navigates)
+ */
+function createClickableSection(title, sectionId, navId, action) {
+    const section = document.createElement('div');
+    section.className = 'nav-section nav-section-clickable';
+    section.id = sectionId;
+    
+    // Section header (clickable, no chevron)
+    const header = document.createElement('div');
+    header.className = 'nav-section-header';
+    header.id = navId;
+    header.setAttribute('data-tooltip', title);
+    header.innerHTML = `
+        <span class="nav-section-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+        </span>
+        <span class="nav-section-title">${title}</span>
+    `;
+    
+    header.addEventListener('click', () => {
+        // Clear other active states and set this one active
+        document.querySelectorAll('.nav-item.active, .nav-section-header.active').forEach(el => el.classList.remove('active'));
+        header.classList.add('active');
+        action();
+    });
+    
+    section.appendChild(header);
+    
+    return section;
 }
 
 /**
@@ -430,7 +513,7 @@ function createWellNavItem(well, sheet) {
 }
 
 function setActiveNavItem(item) {
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item.active, .nav-section-header.active').forEach(el => el.classList.remove('active'));
     item.classList.add('active');
 }
 
@@ -498,11 +581,19 @@ let chartExplorerState = {
     gas: null
 };
 
+// Store aggregation period for each chart type ('day', 'week', 'month')
+let chartAggregationPeriod = {
+    oil: 'month',
+    water: 'month',
+    gas: 'month'
+};
+
 /**
  * Show the aggregate oil production chart view
  */
 function showOilChartView(startDate = null, endDate = null) {
     showView('oilChart');
+    initializeAggregationOptions('oil');
     renderChartExplorer('oil');
     renderAggregateChart('oil', startDate, endDate);
 }
@@ -512,6 +603,7 @@ function showOilChartView(startDate = null, endDate = null) {
  */
 function showWaterChartView(startDate = null, endDate = null) {
     showView('waterChart');
+    initializeAggregationOptions('water');
     renderChartExplorer('water');
     renderAggregateChart('water', startDate, endDate);
 }
@@ -521,8 +613,39 @@ function showWaterChartView(startDate = null, endDate = null) {
  */
 function showGasChartView(startDate = null, endDate = null) {
     showView('gasChart');
+    initializeAggregationOptions('gas');
     renderChartExplorer('gas');
     renderAggregateChart('gas', startDate, endDate);
+}
+
+/**
+ * Initialize aggregation period radio button event listeners
+ */
+function initializeAggregationOptions(chartType) {
+    const containerIds = {
+        oil: 'oilAggregationOptions',
+        water: 'waterAggregationOptions',
+        gas: 'gasAggregationOptions'
+    };
+    
+    const container = document.getElementById(containerIds[chartType]);
+    if (!container) return;
+    
+    // Set the current selection
+    const currentPeriod = chartAggregationPeriod[chartType];
+    const radio = container.querySelector(`input[value="${currentPeriod}"]`);
+    if (radio) radio.checked = true;
+    
+    // Add event listeners (clone to remove old listeners)
+    container.querySelectorAll('input[type="radio"]').forEach(input => {
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        
+        newInput.addEventListener('change', (e) => {
+            chartAggregationPeriod[chartType] = e.target.value;
+            updateAggregateChartFromExplorer(chartType);
+        });
+    });
 }
 
 /**
@@ -836,9 +959,10 @@ function renderAggregateChart(dataType, startDate = null, endDate = null) {
         aggregateGasChart = null;
     }
     
-    // Get aggregate data (filtered by selected wells)
+    // Get aggregate data (filtered by selected wells and aggregation period)
     const selectedWells = chartExplorerState[dataType];
-    const { data, dateRange } = getAggregateProductionTimeSeries(dataType, startDate, endDate, selectedWells);
+    const aggregationPeriod = chartAggregationPeriod[dataType];
+    const { data, dateRange } = getAggregateProductionTimeSeries(dataType, startDate, endDate, selectedWells, aggregationPeriod);
     
     // Store full date range for date picker bounds
     if (dataType === 'oil') {
@@ -1015,6 +1139,35 @@ function renderDashboardStats() {
     document.getElementById('statDailyOil').textContent = stats.totalOil.toLocaleString();
     document.getElementById('statDailyWater').textContent = stats.totalWater.toLocaleString();
     document.getElementById('statDailyGas').textContent = stats.totalGas.toLocaleString();
+    
+    // Add click handlers to stat cards
+    const statCardOil = document.getElementById('statCardOil');
+    const statCardWater = document.getElementById('statCardWater');
+    const statCardGas = document.getElementById('statCardGas');
+    
+    if (statCardOil) {
+        statCardOil.onclick = () => {
+            const navItem = document.getElementById('nav-oil-chart');
+            if (navItem) setActiveNavItem(navItem);
+            showOilChartView();
+        };
+    }
+    
+    if (statCardWater) {
+        statCardWater.onclick = () => {
+            const navItem = document.getElementById('nav-water-chart');
+            if (navItem) setActiveNavItem(navItem);
+            showWaterChartView();
+        };
+    }
+    
+    if (statCardGas) {
+        statCardGas.onclick = () => {
+            const navItem = document.getElementById('nav-gas-chart');
+            if (navItem) setActiveNavItem(navItem);
+            showGasChartView();
+        };
+    }
 }
 
 /**
@@ -1179,7 +1332,6 @@ async function processBulkUploadFromDashboard(files) {
         loadingSubtext.textContent = `${processed + 1} of ${files.length}: ${file.name}`;
         
         const sheetConfig = GAUGE_SHEETS.find(s => 
-            file.name.toLowerCase().includes(s.fileName.toLowerCase().replace('.xlsx', '').replace('.xlsm', '')) ||
             s.fileName.toLowerCase() === file.name.toLowerCase()
         );
         
@@ -1508,7 +1660,6 @@ async function processBulkUpload(files) {
         
         // Find matching gauge sheet config
         const sheetConfig = GAUGE_SHEETS.find(s => 
-            file.name.toLowerCase().includes(s.fileName.toLowerCase().replace('.xlsx', '').replace('.xlsm', '')) ||
             s.fileName.toLowerCase() === file.name.toLowerCase()
         );
         
@@ -1980,11 +2131,30 @@ function getAggregateStats() {
  * @param {Date} endDate - Optional end date filter
  * @returns {Object} { data: Array of {x: Date, y: Number}, dateRange: {min, max} }
  */
-function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, endDate = null, selectedWells = null) {
-    // Map to aggregate values by date string (YYYY-MM-DD)
+function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, endDate = null, selectedWells = null, aggregationPeriod = 'day') {
+    // Map to aggregate values by date key
     const dateMap = new Map();
     let minDate = null;
     let maxDate = null;
+    
+    /**
+     * Get the aggregation key for a date based on the period
+     */
+    function getAggregationKey(date, period) {
+        const d = new Date(date);
+        if (period === 'week') {
+            // Get Monday of the week
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(d.setDate(diff));
+            return monday.toISOString().split('T')[0];
+        } else if (period === 'month') {
+            // First day of month
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+        }
+        // Default: day
+        return date.toISOString().split('T')[0];
+    }
     
     Object.keys(appData).forEach(sheetId => {
         const sheet = appData[sheetId];
@@ -2012,8 +2182,8 @@ function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, en
                     if (!minDate || date < minDate) minDate = date;
                     if (!maxDate || date > maxDate) maxDate = date;
                     
-                    // Aggregate by date
-                    const dateKey = date.toISOString().split('T')[0];
+                    // Aggregate by the appropriate period
+                    const dateKey = getAggregationKey(date, aggregationPeriod);
                     const currentVal = dateMap.get(dateKey) || 0;
                     dateMap.set(dateKey, currentVal + Number(value));
                 });

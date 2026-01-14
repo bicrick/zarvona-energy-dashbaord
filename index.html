@@ -38,10 +38,10 @@
                 <!-- Navigation populated by JS with Home and Wells sections -->
             </nav>
             <div class="sidebar-footer">
-                <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+                <button class="theme-toggle" id="themeToggle" title="Toggle theme: System / Light / Dark">
                     <span class="theme-toggle-icon">
-                        <!-- Sun icon (for switching to light mode) -->
-                        <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Sun icon (light mode) -->
+                        <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
                             <circle cx="12" cy="12" r="5"></circle>
                             <line x1="12" y1="1" x2="12" y2="3"></line>
                             <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -52,12 +52,18 @@
                             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                         </svg>
-                        <!-- Moon icon (for switching to dark mode) -->
-                        <svg class="icon-moon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Moon icon (dark mode) -->
+                        <svg class="icon-moon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
+                        <!-- Monitor icon (system mode) -->
+                        <svg class="icon-system" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
                     </span>
-                    <span class="theme-toggle-label">Light Mode</span>
+                    <span class="theme-toggle-label">System</span>
                 </button>
             </div>
         </aside>
@@ -140,15 +146,15 @@
 
                     <!-- Aggregate Stats -->
                     <div class="stats-grid stats-grid-3" id="dashboardStats">
-                        <div class="stat-card-compact">
+                        <div class="stat-card-compact stat-card-clickable" id="statCardOil">
                             <span class="stat-value" id="statDailyOil">0</span>
                             <span class="stat-label">Daily Oil (bbl)</span>
                         </div>
-                        <div class="stat-card-compact">
+                        <div class="stat-card-compact stat-card-clickable" id="statCardWater">
                             <span class="stat-value" id="statDailyWater">0</span>
                             <span class="stat-label">Daily Water (bbl)</span>
                         </div>
-                        <div class="stat-card-compact">
+                        <div class="stat-card-compact stat-card-clickable" id="statCardGas">
                             <span class="stat-value" id="statDailyGas">0</span>
                             <span class="stat-label">Daily Gas (mcf)</span>
                         </div>
@@ -521,15 +527,36 @@
                             <canvas id="aggregateOilChart"></canvas>
                         </div>
                     </section>
-                    <aside class="card chart-explorer" id="oilChartExplorer">
-                        <div class="explorer-header">
-                            <h4>Filter Wells</h4>
-                            <button class="btn-toggle-all" id="btnToggleAllOil">Select All</button>
-                        </div>
-                        <div class="explorer-batteries" id="oilChartBatteries">
-                            <!-- Dynamically populated with batteries and wells -->
-                        </div>
-                    </aside>
+                    <div class="chart-controls">
+                        <aside class="card chart-aggregation">
+                            <div class="aggregation-header">
+                                <h4>Aggregate By</h4>
+                            </div>
+                            <div class="aggregation-options" id="oilAggregationOptions">
+                                <label class="aggregation-option">
+                                    <input type="radio" name="oilAggregation" value="day">
+                                    <span>Day</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="oilAggregation" value="week">
+                                    <span>Week</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="oilAggregation" value="month" checked>
+                                    <span>Month</span>
+                                </label>
+                            </div>
+                        </aside>
+                        <aside class="card chart-explorer" id="oilChartExplorer">
+                            <div class="explorer-header">
+                                <h4>Filter Wells</h4>
+                                <button class="btn-toggle-all" id="btnToggleAllOil">Select All</button>
+                            </div>
+                            <div class="explorer-batteries" id="oilChartBatteries">
+                                <!-- Dynamically populated with batteries and wells -->
+                            </div>
+                        </aside>
+                    </div>
                 </div>
             </div>
 
@@ -559,15 +586,36 @@
                             <canvas id="aggregateWaterChart"></canvas>
                         </div>
                     </section>
-                    <aside class="card chart-explorer" id="waterChartExplorer">
-                        <div class="explorer-header">
-                            <h4>Filter Wells</h4>
-                            <button class="btn-toggle-all" id="btnToggleAllWater">Select All</button>
-                        </div>
-                        <div class="explorer-batteries" id="waterChartBatteries">
-                            <!-- Dynamically populated with batteries and wells -->
-                        </div>
-                    </aside>
+                    <div class="chart-controls">
+                        <aside class="card chart-aggregation">
+                            <div class="aggregation-header">
+                                <h4>Aggregate By</h4>
+                            </div>
+                            <div class="aggregation-options" id="waterAggregationOptions">
+                                <label class="aggregation-option">
+                                    <input type="radio" name="waterAggregation" value="day">
+                                    <span>Day</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="waterAggregation" value="week">
+                                    <span>Week</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="waterAggregation" value="month" checked>
+                                    <span>Month</span>
+                                </label>
+                            </div>
+                        </aside>
+                        <aside class="card chart-explorer" id="waterChartExplorer">
+                            <div class="explorer-header">
+                                <h4>Filter Wells</h4>
+                                <button class="btn-toggle-all" id="btnToggleAllWater">Select All</button>
+                            </div>
+                            <div class="explorer-batteries" id="waterChartBatteries">
+                                <!-- Dynamically populated with batteries and wells -->
+                            </div>
+                        </aside>
+                    </div>
                 </div>
             </div>
 
@@ -597,15 +645,36 @@
                             <canvas id="aggregateGasChart"></canvas>
                         </div>
                     </section>
-                    <aside class="card chart-explorer" id="gasChartExplorer">
-                        <div class="explorer-header">
-                            <h4>Filter Wells</h4>
-                            <button class="btn-toggle-all" id="btnToggleAllGas">Select All</button>
-                        </div>
-                        <div class="explorer-batteries" id="gasChartBatteries">
-                            <!-- Dynamically populated with batteries and wells -->
-                        </div>
-                    </aside>
+                    <div class="chart-controls">
+                        <aside class="card chart-aggregation">
+                            <div class="aggregation-header">
+                                <h4>Aggregate By</h4>
+                            </div>
+                            <div class="aggregation-options" id="gasAggregationOptions">
+                                <label class="aggregation-option">
+                                    <input type="radio" name="gasAggregation" value="day">
+                                    <span>Day</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="gasAggregation" value="week">
+                                    <span>Week</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="gasAggregation" value="month" checked>
+                                    <span>Month</span>
+                                </label>
+                            </div>
+                        </aside>
+                        <aside class="card chart-explorer" id="gasChartExplorer">
+                            <div class="explorer-header">
+                                <h4>Filter Wells</h4>
+                                <button class="btn-toggle-all" id="btnToggleAllGas">Select All</button>
+                            </div>
+                            <div class="explorer-batteries" id="gasChartBatteries">
+                                <!-- Dynamically populated with batteries and wells -->
+                            </div>
+                        </aside>
+                    </div>
                 </div>
             </div>
         </main>
