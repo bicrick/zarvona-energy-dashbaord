@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil Well Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Archivo:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <!-- Chart.js for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script type="module" crossorigin src="/assets/index-C8OjKUL4.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BBTXedzA.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="hamburger-btn" id="hamburgerBtn" title="Toggle sidebar">
+                    <svg class="hamburger-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                    <svg class="close-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <a href="#" class="logo-link" id="logoLink">
+                    <h1>Zarvona Energy</h1>
+                </a>
+            </div>
+            <nav class="nav-tree" id="navTree">
+                <!-- Navigation populated by JS with Home and Wells sections -->
+            </nav>
+            <div class="sidebar-footer">
+                <button class="theme-toggle" id="themeToggle" title="Toggle theme: System / Light / Dark">
+                    <span class="theme-toggle-icon">
+                        <!-- Sun icon (light mode) -->
+                        <svg class="icon-sun" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <!-- Moon icon (dark mode) -->
+                        <svg class="icon-moon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <!-- Monitor icon (system mode) -->
+                        <svg class="icon-system" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                    </span>
+                    <span class="theme-toggle-label">System</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Welcome View (default) -->
+            <div id="welcomeView" class="view active">
+                <!-- Pre-upload: Show upload prompt -->
+                <div class="welcome-container" id="welcomeUploadPrompt">
+                    <h2>Oil Well Dashboard</h2>
+                    <p class="welcome-subtitle">Getting Started Guide</p>
+                    
+                    <div class="welcome-two-column">
+                        <!-- Bulk Upload Section -->
+                        <section class="bulk-upload-section">
+                            <div class="bulk-upload-area" id="bulkUploadArea">
+                                <input type="file" id="bulkFileInput" accept=".xlsx,.xlsm,.xls" multiple hidden>
+                                <div class="upload-icon">+</div>
+                                <p><strong>Upload All Gauge Sheets</strong></p>
+                                <p class="upload-hint">Select or drag all 9 Excel files at once</p>
+                            </div>
+                            <div class="bulk-upload-progress" id="bulkUploadProgress" style="display: none;">
+                                <div class="progress-bar"><div class="progress-fill" id="bulkProgressFill"></div></div>
+                                <span class="progress-text" id="bulkProgressText">Processing...</span>
+                            </div>
+                            <div class="bulk-upload-results" id="bulkUploadResults" style="display: none;"></div>
+                        </section>
+                        
+                        <!-- Required Files List -->
+                        <section class="required-files-section">
+                            <h3>Required Gauge Sheet Files</h3>
+                            <p class="files-description">Upload the following Excel files to populate the dashboard, or select individual sheets from the sidebar.</p>
+                            <ol class="required-files-list">
+                                <li>Cowden Gauge Sheet1.xlsx</li>
+                                <li>Big Max Gauge Sheet.xlsx</li>
+                                <li>Big Max 1H Gauge Sheet.xlsx</li>
+                                <li>South Andrews Gauge Sheet.xlsm</li>
+                                <li>Polaris Gauge Sheet.xlsx</li>
+                                <li>Shusa Gauge Sheet.xlsx</li>
+                                <li>Mw-Wemac-Sabrina-Berkley.xlsx</li>
+                                <li>1-30 Unit 1H Gauge Sheet.xlsx</li>
+                                <li>ULS 3-5H Gauge Sheet.xlsx</li>
+                            </ol>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- Post-upload: Show Operations Dashboard -->
+                <div class="dashboard-container" id="operationsDashboard" style="display: none;">
+                    <!-- Loading Overlay for Re-upload -->
+                    <div class="loading-overlay" id="dashboardLoadingOverlay">
+                        <div class="loading-content">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text" id="dashboardLoadingText">Processing sheets...</p>
+                            <p class="loading-subtext" id="dashboardLoadingSubtext"></p>
+                        </div>
+                    </div>
+                    
+                    <header class="dashboard-header">
+                        <div class="dashboard-title">
+                            <h2>Operations Dashboard</h2>
+                            <p>Overview of all wells and recent activity</p>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn-reupload-compact" id="btnReuploadAll">
+                                <span class="btn-icon">+</span>
+                                Re-upload Sheets
+                            </button>
+                            <input type="file" id="bulkFileInputDashboard" accept=".xlsx,.xlsm,.xls" multiple hidden>
+                            <button class="btn-clear-cache" id="btnClearCache" title="Clear Cache">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                <span class="btn-label">Clear Cache</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Aggregate Stats -->
+                    <div class="stats-grid stats-grid-3" id="dashboardStats">
+                        <div class="stat-card-compact stat-card-clickable" id="statCardOil">
+                            <span class="stat-value" id="statDailyOil">0</span>
+                            <span class="stat-label">Daily Oil (bbl)</span>
+                        </div>
+                        <div class="stat-card-compact stat-card-clickable" id="statCardWater">
+                            <span class="stat-value" id="statDailyWater">0</span>
+                            <span class="stat-label">Daily Water (bbl)</span>
+                        </div>
+                        <div class="stat-card-compact stat-card-clickable" id="statCardGas">
+                            <span class="stat-value" id="statDailyGas">0</span>
+                            <span class="stat-label">Daily Gas (mcf)</span>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Grid: Top Producers + Action Items -->
+                    <div class="dashboard-main-grid">
+                        <!-- Top Producing Wells -->
+                        <section class="card dashboard-card top-producers-card">
+                            <h3>Top Producing Wells</h3>
+                            <div class="table-container">
+                                <table id="topProducersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Well</th>
+                                            <th>Battery</th>
+                                            <th>Oil (bbl)</th>
+                                            <th>Water (bbl)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topProducersBody">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <!-- Action Items / Alerts -->
+                        <section class="card dashboard-card action-items-card">
+                            <h3>Action Items</h3>
+                            <ul class="action-list dashboard-action-list" id="dashboardActionList">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </section>
+                    </div>
+
+                    <!-- Recent Well Tests -->
+                    <section class="card dashboard-card recent-tests-card">
+                        <h3>Recent Well Tests</h3>
+                        <div class="table-container">
+                            <table id="recentTestsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Well</th>
+                                        <th>Battery</th>
+                                        <th>Oil (bbl)</th>
+                                        <th>Water (bbl)</th>
+                                        <th>Gas (mcf)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTestsBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Gauge Sheet View (upload + wells list) -->
+            <div id="gaugeSheetView" class="view">
+                <header class="view-header">
+                    <h2 id="sheetName">Gauge Sheet</h2>
+                    <span class="breadcrumb" id="sheetBreadcrumb"></span>
+                </header>
+
+                <!-- Upload Section -->
+                <section class="card upload-card">
+                    <h3>Upload Data</h3>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls" hidden>
+                        <div class="upload-prompt" id="uploadPrompt">
+                            <div class="upload-icon">+</div>
+                            <p>Click to upload <strong id="expectedFileName">gauge sheet</strong></p>
+                            <p class="upload-hint">or drag and drop</p>
+                        </div>
+                        <div class="upload-status" id="uploadStatus" style="display: none;">
+                            <div class="status-info">
+                                <span class="status-label">Last uploaded:</span>
+                                <span class="status-value" id="lastUploadDate">-</span>
+                            </div>
+                            <div class="status-info">
+                                <span class="status-label">Rows:</span>
+                                <span class="status-value" id="rowCount">-</span>
+                            </div>
+                            <button class="btn-reupload" id="btnReupload">Re-upload</button>
+                        </div>
+                    </div>
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                        <span class="progress-text" id="progressText">Processing...</span>
+                    </div>
+                </section>
+
+                <!-- Wells List -->
+                <section class="card">
+                    <h3>Wells</h3>
+                    <div class="wells-grid" id="wellsGrid">
+                        <p class="empty-message">Upload gauge sheet to see wells</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Well Detail View -->
+            <div id="wellView" class="view">
+                <header class="view-header">
+                    <h2 id="wellName">Well Name</h2>
+                    <span class="breadcrumb" id="wellBreadcrumb"></span>
+                </header>
+
+                <div class="dashboard-grid well-grid">
+                    <!-- Production Charts -->
+                    <section class="card production-card">
+                        <div class="production-header">
+                            <h3>Production</h3>
+                            <div class="date-range-selector" id="productionDateSelector">
+                                <label>
+                                    <span>From</span>
+                                    <input type="date" id="productionStartDate">
+                                </label>
+                                <label>
+                                    <span>To</span>
+                                    <input type="date" id="productionEndDate">
+                                </label>
+                                <button class="btn-reset-dates" id="btnResetDates" title="Reset to full range">Reset</button>
+                            </div>
+                        </div>
+                        <div class="multi-chart-wrapper" id="productionChartsWrapper">
+                            <!-- Charts dynamically inserted by JS -->
+                        </div>
+                    </section>
+
+                    <!-- Well Test Table -->
+                    <section class="card">
+                        <h3>Well Test Table</h3>
+                        <div class="table-container">
+                            <table id="wellTestTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Oil (bbl)</th>
+                                        <th>Water (bbl)</th>
+                                        <th>Gas (mcf)</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Chemical Program -->
+                    <section class="card">
+                        <div class="card-header-editable">
+                            <h3>Chemical Program</h3>
+                            <button class="btn-edit" data-edit="chemicalProgram" title="Edit Chemical Program">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table id="chemicalTable">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Continuous</th>
+                                        <th>Truck Treat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Rate (gal/month)</td>
+                                        <td id="chemContRate">-</td>
+                                        <td id="chemTruckRate">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Chems Used</td>
+                                        <td id="chemContChems">-</td>
+                                        <td id="chemTruckChems">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>PPM</td>
+                                        <td id="chemContPPM">-</td>
+                                        <td id="chemTruckPPM">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Failure History -->
+                    <section class="card failure-card">
+                        <div class="card-header-editable">
+                            <h3>Failure History</h3>
+                            <button class="btn-edit" data-edit="failureHistory" title="Edit Failure History">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table id="failureTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date Down</th>
+                                        <th>Date Up</th>
+                                        <th>Downtime (days)</th>
+                                        <th>Oil Lost</th>
+                                        <th>Reason</th>
+                                        <th>Comments</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Action Items -->
+                    <section class="card">
+                        <div class="card-header-editable">
+                            <h3>Action Items</h3>
+                            <button class="btn-edit" data-edit="actionItems" title="Edit Action Items">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <ul class="action-list" id="wellActionList"></ul>
+                    </section>
+
+                    <!-- Pressure Readings -->
+                    <section class="card">
+                        <div class="card-header-editable">
+                            <h3>Pressure Readings</h3>
+                            <button class="btn-edit" data-edit="pressureReadings" title="Edit Pressure Readings">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table id="pressureTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Casing PSI</th>
+                                        <th>Tubing PSI</th>
+                                        <th>Flowline PSI</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Edit Modal -->
+                <div class="edit-modal" id="editModal">
+                    <div class="edit-modal-overlay" id="editModalOverlay"></div>
+                    <div class="edit-modal-content">
+                        <div class="edit-modal-header">
+                            <h3 id="editModalTitle">Edit</h3>
+                            <button class="btn-close-modal" id="btnCloseModal">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="edit-modal-body" id="editModalBody">
+                            <!-- Form content dynamically inserted -->
+                        </div>
+                        <div class="edit-modal-footer">
+                            <button class="btn-cancel" id="btnCancelEdit">Cancel</button>
+                            <button class="btn-save" id="btnSaveEdit">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Battery/Run Tickets View -->
+            <div id="batteryView" class="view">
+                <header class="view-header">
+                    <h2 id="batteryName">Battery Name</h2>
+                    <span class="breadcrumb" id="batteryBreadcrumb"></span>
+                </header>
+
+                <div class="dashboard-grid battery-grid">
+                    <!-- Aggregated Production Chart -->
+                    <section class="card production-card">
+                        <h3>Production (All Wells)</h3>
+                        <div class="chart-container">
+                            <canvas id="batteryProductionChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Tank Volumes -->
+                    <section class="card">
+                        <h3>Tank Volumes</h3>
+                        <div class="table-container">
+                            <table id="tankTable">
+                                <thead>
+                                    <tr>
+                                        <th>Tank #</th>
+                                        <th>Ft</th>
+                                        <th>In</th>
+                                        <th>Bbl</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Run Tickets -->
+                    <section class="card run-tickets-card">
+                        <h3>Run Tickets</h3>
+                        <div class="table-container">
+                            <table id="runTicketTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Ticket #</th>
+                                        <th>Tank</th>
+                                        <th>Ft (top)</th>
+                                        <th>In (top)</th>
+                                        <th>Ft (bttm)</th>
+                                        <th>In (bttm)</th>
+                                        <th>Vol</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Action Items / Repairs -->
+                    <section class="card">
+                        <h3>Action Items / Repairs Needed</h3>
+                        <ul class="action-list" id="batteryActionList"></ul>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Aggregate Oil Chart View -->
+            <div id="oilChartView" class="view">
+                <header class="view-header">
+                    <h2>Oil Production</h2>
+                    <span class="breadcrumb">Aggregate production across all wells</span>
+                </header>
+                <div class="aggregate-chart-layout">
+                    <section class="card production-card aggregate-chart-card">
+                        <div class="production-header">
+                            <h3>Total Oil Production Over Time</h3>
+                            <div class="date-range-selector" id="oilChartDateSelector">
+                                <label>
+                                    <span>From</span>
+                                    <input type="date" id="oilChartStartDate">
+                                </label>
+                                <label>
+                                    <span>To</span>
+                                    <input type="date" id="oilChartEndDate">
+                                </label>
+                                <button class="btn-reset-dates" id="btnResetOilDates" title="Reset to full range">Reset</button>
+                            </div>
+                        </div>
+                        <div class="aggregate-chart-container">
+                            <canvas id="aggregateOilChart"></canvas>
+                        </div>
+                    </section>
+                    <div class="chart-controls">
+                        <aside class="card chart-aggregation">
+                            <div class="aggregation-header">
+                                <h4>Aggregate By</h4>
+                            </div>
+                            <div class="aggregation-options" id="oilAggregationOptions">
+                                <label class="aggregation-option">
+                                    <input type="radio" name="oilAggregation" value="day">
+                                    <span>Day</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="oilAggregation" value="week">
+                                    <span>Week</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="oilAggregation" value="month" checked>
+                                    <span>Month</span>
+                                </label>
+                            </div>
+                        </aside>
+                        <aside class="card chart-explorer" id="oilChartExplorer">
+                            <div class="explorer-header">
+                                <h4>Filter Wells</h4>
+                                <button class="btn-toggle-all" id="btnToggleAllOil">Select All</button>
+                            </div>
+                            <div class="explorer-batteries" id="oilChartBatteries">
+                                <!-- Dynamically populated with batteries and wells -->
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aggregate Water Chart View -->
+            <div id="waterChartView" class="view">
+                <header class="view-header">
+                    <h2>Water Consumption</h2>
+                    <span class="breadcrumb">Aggregate consumption across all wells</span>
+                </header>
+                <div class="aggregate-chart-layout">
+                    <section class="card production-card aggregate-chart-card">
+                        <div class="production-header">
+                            <h3>Total Water Consumption Over Time</h3>
+                            <div class="date-range-selector" id="waterChartDateSelector">
+                                <label>
+                                    <span>From</span>
+                                    <input type="date" id="waterChartStartDate">
+                                </label>
+                                <label>
+                                    <span>To</span>
+                                    <input type="date" id="waterChartEndDate">
+                                </label>
+                                <button class="btn-reset-dates" id="btnResetWaterDates" title="Reset to full range">Reset</button>
+                            </div>
+                        </div>
+                        <div class="aggregate-chart-container">
+                            <canvas id="aggregateWaterChart"></canvas>
+                        </div>
+                    </section>
+                    <div class="chart-controls">
+                        <aside class="card chart-aggregation">
+                            <div class="aggregation-header">
+                                <h4>Aggregate By</h4>
+                            </div>
+                            <div class="aggregation-options" id="waterAggregationOptions">
+                                <label class="aggregation-option">
+                                    <input type="radio" name="waterAggregation" value="day">
+                                    <span>Day</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="waterAggregation" value="week">
+                                    <span>Week</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="waterAggregation" value="month" checked>
+                                    <span>Month</span>
+                                </label>
+                            </div>
+                        </aside>
+                        <aside class="card chart-explorer" id="waterChartExplorer">
+                            <div class="explorer-header">
+                                <h4>Filter Wells</h4>
+                                <button class="btn-toggle-all" id="btnToggleAllWater">Select All</button>
+                            </div>
+                            <div class="explorer-batteries" id="waterChartBatteries">
+                                <!-- Dynamically populated with batteries and wells -->
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aggregate Gas Chart View -->
+            <div id="gasChartView" class="view">
+                <header class="view-header">
+                    <h2>Gas Production</h2>
+                    <span class="breadcrumb">Aggregate production across all wells</span>
+                </header>
+                <div class="aggregate-chart-layout">
+                    <section class="card production-card aggregate-chart-card">
+                        <div class="production-header">
+                            <h3>Total Gas Production Over Time</h3>
+                            <div class="date-range-selector" id="gasChartDateSelector">
+                                <label>
+                                    <span>From</span>
+                                    <input type="date" id="gasChartStartDate">
+                                </label>
+                                <label>
+                                    <span>To</span>
+                                    <input type="date" id="gasChartEndDate">
+                                </label>
+                                <button class="btn-reset-dates" id="btnResetGasDates" title="Reset to full range">Reset</button>
+                            </div>
+                        </div>
+                        <div class="aggregate-chart-container">
+                            <canvas id="aggregateGasChart"></canvas>
+                        </div>
+                    </section>
+                    <div class="chart-controls">
+                        <aside class="card chart-aggregation">
+                            <div class="aggregation-header">
+                                <h4>Aggregate By</h4>
+                            </div>
+                            <div class="aggregation-options" id="gasAggregationOptions">
+                                <label class="aggregation-option">
+                                    <input type="radio" name="gasAggregation" value="day">
+                                    <span>Day</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="gasAggregation" value="week">
+                                    <span>Week</span>
+                                </label>
+                                <label class="aggregation-option">
+                                    <input type="radio" name="gasAggregation" value="month" checked>
+                                    <span>Month</span>
+                                </label>
+                            </div>
+                        </aside>
+                        <aside class="card chart-explorer" id="gasChartExplorer">
+                            <div class="explorer-header">
+                                <h4>Filter Wells</h4>
+                                <button class="btn-toggle-all" id="btnToggleAllGas">Select All</button>
+                            </div>
+                            <div class="explorer-batteries" id="gasChartBatteries">
+                                <!-- Dynamically populated with batteries and wells -->
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
