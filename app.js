@@ -33,6 +33,11 @@ let wellProductionCharts = {};  // Object to hold oil, water, gas charts
 let batteryProductionChart = null;
 let currentWellData = null;  // Store current well for date filtering
 let productionDateRange = { min: null, max: null };  // Store full date range
+let chartState = {
+    oil: { aggregation: 'month', selectedWells: null },
+    water: { aggregation: 'month', selectedWells: null },
+    gas: { aggregation: 'month', selectedWells: null }
+};
 
 // ============================================================================
 // Initialization
@@ -577,8 +582,18 @@ function renderAggregateChart(dataType, startDate = null, endDate = null) {
         aggregateGasChart = null;
     }
     
+    const selectedWells = getSelectedWells(dataType);
+    const aggregation = chartState[dataType]?.aggregation || 'month';
+    chartState[dataType].selectedWells = selectedWells;
+    
     // Get aggregate data
-    const { data, dateRange } = getAggregateProductionTimeSeries(dataType, startDate, endDate);
+    const { data, dateRange } = getAggregateProductionTimeSeries(
+        dataType,
+        startDate,
+        endDate,
+        aggregation,
+        selectedWells
+    );
     
     // Store full date range for date picker bounds
     if (dataType === 'oil') {
@@ -592,8 +607,19 @@ function renderAggregateChart(dataType, startDate = null, endDate = null) {
     // Initialize date pickers
     initializeAggregateChartDatePickers(dataType, config, startDate, endDate, dateRange);
     
-    // Populate wells filter
-    populateWellsFilter(dataType);
+    // Populate wells filter only once to avoid collapsing UI on rerender
+    const filterContainerIds = {
+        oil: 'oilChartBatteries',
+        water: 'waterChartBatteries',
+        gas: 'gasChartBatteries'
+    };
+    const filterContainer = document.getElementById(filterContainerIds[dataType]);
+    if (filterContainer && !filterContainer.querySelector('.explorer-battery')) {
+        populateWellsFilter(dataType);
+    }
+    
+    // Initialize aggregation handlers
+    initializeAggregationHandlers(dataType);
     
     const canvas = document.getElementById(config.canvasId);
     if (!canvas) return;
@@ -736,6 +762,75 @@ function initializeAggregateChartDatePickers(dataType, config, startDate, endDat
 }
 
 /**
+ * Get selected wells from filter UI
+ * @param {string} dataType - 'oil', 'water', or 'gas'
+ * @returns {Set|null}
+ */
+function getSelectedWells(dataType) {
+    const containerIds = {
+        oil: 'oilChartBatteries',
+        water: 'waterChartBatteries',
+        gas: 'gasChartBatteries'
+    };
+    const container = document.getElementById(containerIds[dataType]);
+    if (!container) return null;
+    
+    const selected = new Set();
+    container.querySelectorAll('.well-checkbox:checked').forEach(cb => {
+        if (cb.dataset.well) selected.add(cb.dataset.well);
+    });
+    
+    return selected.size > 0 ? selected : null;
+}
+
+/**
+ * Re-render aggregate chart using current date inputs
+ * @param {string} dataType - 'oil', 'water', or 'gas'
+ */
+function rerenderAggregateChart(dataType) {
+    const configMap = {
+        oil: { startDateId: 'oilChartStartDate', endDateId: 'oilChartEndDate', showFn: showOilChartView },
+        water: { startDateId: 'waterChartStartDate', endDateId: 'waterChartEndDate', showFn: showWaterChartView },
+        gas: { startDateId: 'gasChartStartDate', endDateId: 'gasChartEndDate', showFn: showGasChartView }
+    };
+    
+    const config = configMap[dataType];
+    if (!config) return;
+    
+    const startInput = document.getElementById(config.startDateId);
+    const endInput = document.getElementById(config.endDateId);
+    const startDate = startInput && startInput.value ? new Date(startInput.value) : null;
+    const endDate = endInput && endInput.value ? new Date(endInput.value + 'T23:59:59') : null;
+    
+    config.showFn(startDate, endDate);
+}
+
+/**
+ * Initialize aggregation radio button handlers
+ * @param {string} dataType - 'oil', 'water', or 'gas'
+ */
+function initializeAggregationHandlers(dataType) {
+    const radios = document.querySelectorAll(`input[name="${dataType}Aggregation"]`);
+    if (!radios.length) return;
+    
+    // Remove old event listeners by cloning
+    radios.forEach(radio => {
+        const newRadio = radio.cloneNode(true);
+        radio.parentNode.replaceChild(newRadio, radio);
+    });
+    
+    // Restore checked state
+    const activeValue = chartState[dataType]?.aggregation || 'month';
+    document.querySelectorAll(`input[name="${dataType}Aggregation"]`).forEach(radio => {
+        radio.checked = radio.value === activeValue;
+        radio.addEventListener('change', (e) => {
+            chartState[dataType].aggregation = e.target.value;
+            rerenderAggregateChart(dataType);
+        });
+    });
+}
+
+/**
  * Populate the wells filter sidebar for aggregate charts
  * @param {string} dataType - 'oil', 'water', or 'gas'
  */
@@ -758,6 +853,32 @@ function populateWellsFilter(dataType) {
         return;
     }
     
+    const updateToggleLabel = () => {
+        const toggleBtnIds = {
+            oil: 'btnToggleAllOil',
+            water: 'btnToggleAllWater',
+            gas: 'btnToggleAllGas'
+        };
+        const toggleBtn = document.getElementById(toggleBtnIds[dataType]);
+        if (!toggleBtn) return;
+        
+        const wellCheckboxes = container.querySelectorAll('.well-checkbox');
+        if (!wellCheckboxes.length) return;
+        const allChecked = Array.from(wellCheckboxes).every(cb => cb.checked);
+        toggleBtn.textContent = allChecked ? 'Deselect All' : 'Select All';
+    };
+    
+    const syncBatteryCheckbox = (batterySection) => {
+        const batteryCheckbox = batterySection.querySelector('.battery-checkbox');
+        const wellCheckboxes = batterySection.querySelectorAll('.well-checkbox');
+        const checkedCount = batterySection.querySelectorAll('.well-checkbox:checked').length;
+        if (!batteryCheckbox || !wellCheckboxes.length) return;
+        batteryCheckbox.checked = checkedCount === wellCheckboxes.length;
+        batteryCheckbox.indeterminate = checkedCount > 0 && checkedCount < wellCheckboxes.length;
+    };
+    
+    const selectedWells = chartState[dataType]?.selectedWells || null;
+    
     // Build the wells filter UI grouped by battery
     GAUGE_SHEETS.forEach(sheetConfig => {
         const sheetData = appData[sheetConfig.id];
@@ -776,7 +897,7 @@ function populateWellsFilter(dataType) {
         batteryHeader.className = 'explorer-battery-header';
         batteryHeader.innerHTML = `
             <label class="explorer-checkbox">
-                <input type="checkbox" class="battery-checkbox" data-battery="${sheetConfig.id}" checked>
+                <input type="checkbox" class="battery-checkbox" data-battery="${sheetConfig.id}">
                 <span class="checkmark"></span>
             </label>
             <span class="battery-name">${sheetConfig.name}</span>
@@ -789,10 +910,11 @@ function populateWellsFilter(dataType) {
         wellsList.id = `wells-${dataType}-${sheetConfig.id}`;
         
         activeWells.forEach(well => {
+            const isSelected = !selectedWells || selectedWells.has(well.id);
             const wellItem = document.createElement('label');
             wellItem.className = 'explorer-well explorer-checkbox';
             wellItem.innerHTML = `
-                <input type="checkbox" class="well-checkbox" data-battery="${sheetConfig.id}" data-well="${well.id}" checked>
+                <input type="checkbox" class="well-checkbox" data-battery="${sheetConfig.id}" data-well="${well.id}" ${isSelected ? 'checked' : ''}>
                 <span class="checkmark"></span>
                 <span class="well-name">${well.name}</span>
             `;
@@ -805,26 +927,32 @@ function populateWellsFilter(dataType) {
         
         // Toggle wells list on battery header click
         batteryHeader.addEventListener('click', (e) => {
-            if (e.target.type === 'checkbox') return; // Don't toggle if clicking checkbox
+            if (e.target.closest('input[type="checkbox"]') || e.target.closest('.explorer-checkbox')) {
+                return;
+            }
             wellsList.classList.toggle('expanded');
         });
         
         // Battery checkbox controls all wells
         const batteryCheckbox = batteryHeader.querySelector('.battery-checkbox');
+        syncBatteryCheckbox(batterySection);
+        
         batteryCheckbox.addEventListener('change', () => {
             const checked = batteryCheckbox.checked;
             wellsList.querySelectorAll('.well-checkbox').forEach(cb => {
                 cb.checked = checked;
             });
+            batteryCheckbox.indeterminate = false;
+            rerenderAggregateChart(dataType);
+            updateToggleLabel();
         });
         
         // Well checkbox updates battery checkbox state
         wellsList.querySelectorAll('.well-checkbox').forEach(wellCb => {
             wellCb.addEventListener('change', () => {
-                const allWellCheckboxes = wellsList.querySelectorAll('.well-checkbox');
-                const checkedCount = wellsList.querySelectorAll('.well-checkbox:checked').length;
-                batteryCheckbox.checked = checkedCount === allWellCheckboxes.length;
-                batteryCheckbox.indeterminate = checkedCount > 0 && checkedCount < allWellCheckboxes.length;
+                syncBatteryCheckbox(batterySection);
+                rerenderAggregateChart(dataType);
+                updateToggleLabel();
             });
         });
     });
@@ -843,16 +971,21 @@ function populateWellsFilter(dataType) {
         toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
         
         newToggleBtn.addEventListener('click', () => {
-            const allCheckboxes = container.querySelectorAll('input[type="checkbox"]');
-            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+            const wellCheckboxes = container.querySelectorAll('.well-checkbox');
+            const allChecked = Array.from(wellCheckboxes).every(cb => cb.checked);
             
-            allCheckboxes.forEach(cb => {
+            wellCheckboxes.forEach(cb => {
                 cb.checked = !allChecked;
-                cb.indeterminate = false;
+            });
+            container.querySelectorAll('.explorer-battery').forEach(section => {
+                syncBatteryCheckbox(section);
             });
             
             newToggleBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+            rerenderAggregateChart(dataType);
         });
+        
+        updateToggleLabel();
     }
 }
 
@@ -1880,9 +2013,17 @@ function getAggregateStats() {
  * @param {string} dataType - 'oil', 'water', or 'gas'
  * @param {Date} startDate - Optional start date filter
  * @param {Date} endDate - Optional end date filter
+ * @param {string} aggregation - 'day', 'week', or 'month'
+ * @param {Set|null} selectedWells - Set of well IDs to include, or null for all
  * @returns {Object} { data: Array of {x: Date, y: Number}, dateRange: {min, max} }
  */
-function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, endDate = null) {
+function getAggregateProductionTimeSeries(
+    dataType = 'oil',
+    startDate = null,
+    endDate = null,
+    aggregation = 'month',
+    selectedWells = null
+) {
     // Map to aggregate values by date string (YYYY-MM-DD)
     const dateMap = new Map();
     let minDate = null;
@@ -1890,12 +2031,26 @@ function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, en
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     
+    const getBucketDate = (date) => {
+        const bucketDate = new Date(date);
+        if (aggregation === 'week') {
+            const day = bucketDate.getUTCDay();
+            const diff = day === 0 ? -6 : 1 - day; // Monday start
+            bucketDate.setUTCDate(bucketDate.getUTCDate() + diff);
+        } else if (aggregation === 'month') {
+            bucketDate.setUTCDate(1);
+        }
+        bucketDate.setUTCHours(0, 0, 0, 0);
+        return bucketDate;
+    };
+    
     Object.keys(appData).forEach(sheetId => {
         const sheet = appData[sheetId];
         if (sheet && sheet.wells && sheet.wells.length > 0) {
             sheet.wells.forEach(well => {
                 // Skip inactive wells
                 if (well.status === 'inactive') return;
+                if (selectedWells && !selectedWells.has(well.id)) return;
                 
                 // Use production array for time series data
                 const production = well.production || [];
@@ -1915,12 +2070,14 @@ function getAggregateProductionTimeSeries(dataType = 'oil', startDate = null, en
                     // Convert negative gas to 0
                     if (dataType === 'gas' && value < 0) value = 0;
                     
+                    const bucketDate = getBucketDate(date);
+                    
                     // Track date range
-                    if (!minDate || date < minDate) minDate = date;
-                    if (!maxDate || date > maxDate) maxDate = date;
+                    if (!minDate || bucketDate < minDate) minDate = bucketDate;
+                    if (!maxDate || bucketDate > maxDate) maxDate = bucketDate;
                     
                     // Aggregate by date
-                    const dateKey = date.toISOString().split('T')[0];
+                    const dateKey = bucketDate.toISOString().split('T')[0];
                     const currentVal = dateMap.get(dateKey) || 0;
                     dateMap.set(dateKey, currentVal + Number(value));
                 });
