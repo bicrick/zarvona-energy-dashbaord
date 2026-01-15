@@ -73,9 +73,16 @@ export const BigMaxParser = {
             rowCount++;
 
             this.wells.forEach((wellDef, idx) => {
-                const oil = this.parseNumber(row[wellDef.oilCol]);
-                const water = this.parseNumber(row[wellDef.waterCol]);
-                const gas = this.parseNumber(row[wellDef.gasCol]);
+                let oil = this.parseNumber(row[wellDef.oilCol]);
+                let water = this.parseNumber(row[wellDef.waterCol]);
+                let gas = this.parseNumber(row[wellDef.gasCol]);
+
+                // Big Max 12-101 SWD has no oil/gas - the "oil" column is actually water
+                if (wellDef.id === 'bigmax-swd') {
+                    water = oil;  // What we thought was oil is actually water
+                    oil = 0;      // No oil production for SWD well
+                    gas = 0;      // No gas production for SWD well
+                }
 
                 if (oil !== null || water !== null || gas !== null) {
                     wells[idx].wellTests.push({ date: dateStr, oil, water, gas });
