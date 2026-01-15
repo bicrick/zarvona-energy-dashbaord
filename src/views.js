@@ -4,6 +4,7 @@ import { renderProductionCharts } from './charts/production.js';
 import { initializeEditHandlers } from './edit-modal.js';
 import { renderDashboard } from './dashboard.js';
 import { hasUploadedData } from './data-aggregation.js';
+import { loadWellDetails, loadWellsList } from './firestore-storage.js';
 
 // CSV Download utility functions
 function downloadCSV(data, headers, filename) {
@@ -80,7 +81,7 @@ export function updateWelcomeStats() {
     }
 }
 
-export function showGaugeSheetView(sheetId) {
+export async function showGaugeSheetView(sheetId) {
     const sheetConfig = GAUGE_SHEETS.find(s => s.id === sheetId);
     if (!sheetConfig) return;
 
@@ -95,11 +96,20 @@ export function showGaugeSheetView(sheetId) {
     const uploadPrompt = document.getElementById('uploadPrompt');
     const uploadStatus = document.getElementById('uploadStatus');
 
-    if (sheetData && sheetData.wells) {
+    if (sheetData && sheetData._metadataLoaded) {
         uploadPrompt.style.display = 'none';
         uploadStatus.style.display = 'flex';
         document.getElementById('lastUploadDate').textContent = formatDate(sheetData.lastUpdated);
         document.getElementById('rowCount').textContent = sheetData.rawRowCount || '-';
+        
+        // Load wells list if not already loaded
+        if (!sheetData._wellsLoaded) {
+            // Show loading state
+            const grid = document.getElementById('wellsGrid');
+            grid.innerHTML = '<div class="loading-placeholder"><div class="loading-spinner-small"></div><span>Loading wells...</span></div>';
+            
+            await loadWellsList(sheetId);
+        }
     } else {
         uploadPrompt.style.display = 'block';
         uploadStatus.style.display = 'none';
@@ -108,11 +118,16 @@ export function showGaugeSheetView(sheetId) {
     renderWellsGrid(sheetId);
 }
 
-export function showWellView(sheetId, wellId) {
+export async function showWellView(sheetId, wellId) {
     const sheetData = appState.appData[sheetId];
-    if (!sheetData || !sheetData.wells) return;
+    if (!sheetData) return;
 
-    const well = sheetData.wells.find(w => w.id === wellId);
+    // Ensure wells list is loaded
+    if (!sheetData._wellsLoaded) {
+        await loadWellsList(sheetId);
+    }
+
+    let well = sheetData.wells.find(w => w.id === wellId);
     if (!well) return;
 
     appState.currentSheet = sheetId;
@@ -124,6 +139,19 @@ export function showWellView(sheetId, wellId) {
     document.getElementById('wellName').textContent = well.name;
     document.getElementById('wellBreadcrumb').textContent = `${sheetConfig.name} > ${well.name}`;
 
+    // Show loading state if well details aren't loaded yet
+    if (!well._detailsLoaded || well._summaryOnly) {
+        showWellLoadingState();
+        
+        // Load full well details
+        await loadWellDetails(sheetId, wellId);
+        
+        // Get the updated well object
+        well = sheetData.wells.find(w => w.id === wellId);
+        if (!well) return;
+    }
+
+    // Render all well data
     renderProductionCharts(well);
     renderWellTestTable(well.wellTests || []);
     renderChemicalProgram(well.chemicalProgram || {});
@@ -134,6 +162,35 @@ export function showWellView(sheetId, wellId) {
 
     initializeEditHandlers();
     initializeCSVDownloadHandlers(well);
+}
+
+function showWellLoadingState() {
+    // Show loading placeholders for well data sections
+    const loadingHTML = '<div class="loading-placeholder"><div class="loading-spinner-small"></div><span>Loading well data...</span></div>';
+    
+    // Production chart
+    const productionChartCard = document.querySelector('#productionChartCard .card-body');
+    if (productionChartCard) {
+        productionChartCard.innerHTML = loadingHTML;
+    }
+    
+    // Well test table
+    const wellTestBody = document.querySelector('#wellTestTable tbody');
+    if (wellTestBody) {
+        wellTestBody.innerHTML = '<tr><td colspan="4" class="dashboard-loading">' + loadingHTML + '</td></tr>';
+    }
+    
+    // Pressure table
+    const pressureBody = document.querySelector('#pressureTable tbody');
+    if (pressureBody) {
+        pressureBody.innerHTML = '<tr><td colspan="5" class="dashboard-loading">' + loadingHTML + '</td></tr>';
+    }
+    
+    // Failure history
+    const failureBody = document.querySelector('#failureTable tbody');
+    if (failureBody) {
+        failureBody.innerHTML = '<tr><td colspan="6" class="dashboard-loading">' + loadingHTML + '</td></tr>';
+    }
 }
 
 function initializeCSVDownloadHandlers(well) {

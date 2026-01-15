@@ -1,6 +1,7 @@
 import { GAUGE_SHEETS, appState } from './config.js';
 import { showView, updateWelcomeStats, showGaugeSheetView, showWellView } from './views.js';
 import { showOilChartView, showWaterChartView, showGasChartView } from './charts/aggregate.js';
+import { loadWellsList } from './firestore-storage.js';
 
 export function initializeLogoHandler() {
     const logoLink = document.getElementById('logoLink');
@@ -172,16 +173,32 @@ function createGaugeSheetNavItem(sheet) {
     const div = document.createElement('div');
     div.className = 'nav-gauge-sheet';
 
-    const hasData = appState.appData[sheet.id] && appState.appData[sheet.id].wells;
-    const activeWells = hasData ? appState.appData[sheet.id].wells.filter(w => w.status !== 'inactive') : [];
+    const sheetData = appState.appData[sheet.id];
+    const hasMetadata = sheetData && sheetData._metadataLoaded;
+    const wellsLoaded = sheetData && sheetData._wellsLoaded;
+    const activeWells = wellsLoaded ? sheetData.wells.filter(w => w.status !== 'inactive') : [];
     const wellCount = activeWells.length;
+
+    // Determine status text
+    let statusText = 'No data';
+    let statusClass = 'not-uploaded';
+    
+    if (hasMetadata) {
+        if (wellsLoaded) {
+            statusText = wellCount + ' wells';
+            statusClass = 'uploaded';
+        } else {
+            statusText = 'Loading...';
+            statusClass = 'uploaded';
+        }
+    }
 
     div.innerHTML = `
         <div class="nav-item" data-sheet-id="${sheet.id}">
             <span class="icon">&#9632;</span>
             <span class="nav-battery-name">${sheet.name}</span>
-            <span class="upload-indicator ${hasData ? 'uploaded' : 'not-uploaded'}">
-                ${hasData ? wellCount + ' wells' : 'No data'}
+            <span class="upload-indicator ${statusClass}">
+                ${statusText}
             </span>
         </div>
         <div class="nav-children" id="sheet-children-${sheet.id}"></div>
@@ -190,18 +207,39 @@ function createGaugeSheetNavItem(sheet) {
     const navItem = div.querySelector('.nav-item');
     const childrenContainer = div.querySelector('.nav-children');
 
-    navItem.addEventListener('click', (e) => {
+    navItem.addEventListener('click', async (e) => {
         e.stopPropagation();
         setActiveNavItem(navItem);
         showGaugeSheetView(sheet.id);
 
-        if (hasData && activeWells.length > 0) {
+        // Load wells on-demand when expanding
+        if (hasMetadata && !wellsLoaded) {
+            const indicator = navItem.querySelector('.upload-indicator');
+            indicator.textContent = 'Loading...';
+            
+            await loadWellsList(sheet.id);
+            
+            // Update the navigation after loading
+            const updatedSheetData = appState.appData[sheet.id];
+            const updatedActiveWells = updatedSheetData.wells.filter(w => w.status !== 'inactive');
+            indicator.textContent = updatedActiveWells.length + ' wells';
+            
+            // Populate wells in navigation
+            childrenContainer.innerHTML = '';
+            updatedActiveWells.forEach(well => {
+                const wellEl = createWellNavItem(well, sheet);
+                childrenContainer.appendChild(wellEl);
+            });
+        }
+
+        if (wellsLoaded && activeWells.length > 0) {
             navItem.classList.toggle('expanded');
             childrenContainer.classList.toggle('visible');
         }
     });
 
-    if (hasData) {
+    // If wells are already loaded, populate them
+    if (wellsLoaded && activeWells.length > 0) {
         activeWells.forEach(well => {
             const wellEl = createWellNavItem(well, sheet);
             childrenContainer.appendChild(wellEl);

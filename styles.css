@@ -81,31 +81,18 @@ body {
 
 /* App Container */
 .app-container {
-    display: grid;
-    grid-template-columns: var(--sidebar-width) 1fr;
-    grid-template-rows: 60px 1fr;
-    grid-template-areas:
-        "sidebar header"
-        "sidebar main";
+    display: flex;
     height: 100vh;
     overflow: hidden;
-}
-
-/* App Header */
-.app-header {
-    grid-area: header;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 1.5rem;
-    z-index: 100;
+    position: relative;
 }
 
 /* User Menu */
 .user-menu-container {
-    position: relative;
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 1000;
 }
 
 .user-avatar-btn {
@@ -201,12 +188,13 @@ body {
 
 /* Sidebar */
 .sidebar {
-    grid-area: sidebar;
+    width: var(--sidebar-width);
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    transition: width 0.3s ease, transform 0.3s ease;
     overflow-x: hidden;
 }
 
@@ -676,7 +664,7 @@ body {
 
 /* Main Content */
 .main-content {
-    grid-area: main;
+    flex: 1;
     overflow-y: auto;
     background: var(--bg-primary);
 }
@@ -2417,18 +2405,10 @@ tbody tr:nth-child(even) {
     }
     
     /* Sidebar mobile */
-    .app-container {
-        grid-template-columns: 1fr;
-        grid-template-rows: 60px 1fr;
-        grid-template-areas:
-            "header"
-            "main";
-    }
-    
     .sidebar {
         position: fixed;
         left: 0;
-        top: 60px;
+        top: 0;
         bottom: 0;
         width: var(--sidebar-width);
         z-index: 200;
@@ -2443,10 +2423,6 @@ tbody tr:nth-child(even) {
     .sidebar.collapsed {
         width: var(--sidebar-width);
         transform: translateX(-100%);
-    }
-    
-    .app-header {
-        grid-area: header;
     }
 }
 
@@ -2516,6 +2492,33 @@ tbody tr:nth-child(even) {
     font-size: 0.875rem;
     color: var(--text-muted);
     font-family: var(--font-mono);
+}
+
+/* Small loading spinner for inline use */
+.loading-spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spinner-rotate 0.9s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.loading-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.dashboard-loading {
+    text-align: center;
+    padding: 24px;
 }
 
 /* ============================================================================

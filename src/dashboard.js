@@ -5,6 +5,8 @@ import { showWellView } from './views.js';
 import { processBulkUploadFromDashboard } from './upload.js';
 import { clearFirestoreData } from './firestore-storage.js';
 
+const LOADING_PLACEHOLDER = '<div class="loading-placeholder"><div class="loading-spinner-small"></div><span>Loading...</span></div>';
+
 let onCacheCleared = null;
 
 export function setOnCacheCleared(handler) {
@@ -19,15 +21,34 @@ export function renderDashboard() {
 }
 
 function renderDashboardStats() {
+    const statDailyOil = document.getElementById('statDailyOil');
+    const statDailyWater = document.getElementById('statDailyWater');
+    const statDailyGas = document.getElementById('statDailyGas');
+    
+    // Show loading state if data is still loading
+    if (appState.isLoading) {
+        statDailyOil.innerHTML = '<span class="loading-text">...</span>';
+        statDailyWater.innerHTML = '<span class="loading-text">...</span>';
+        statDailyGas.innerHTML = '<span class="loading-text">...</span>';
+        return;
+    }
+    
     const stats = getAggregateStats();
 
-    document.getElementById('statDailyOil').textContent = stats.totalOil.toLocaleString();
-    document.getElementById('statDailyWater').textContent = stats.totalWater.toLocaleString();
-    document.getElementById('statDailyGas').textContent = stats.totalGas.toLocaleString();
+    statDailyOil.textContent = stats.totalOil.toLocaleString();
+    statDailyWater.textContent = stats.totalWater.toLocaleString();
+    statDailyGas.textContent = stats.totalGas.toLocaleString();
 }
 
 function renderTopProducers() {
     const tbody = document.getElementById('topProducersBody');
+    
+    // Show loading state if data is still loading
+    if (appState.isLoading) {
+        tbody.innerHTML = '<tr><td colspan="5" class="dashboard-loading">' + LOADING_PLACEHOLDER + '</td></tr>';
+        return;
+    }
+    
     const topWells = getTopProducingWells(10);
 
     if (topWells.length === 0) {
@@ -56,6 +77,13 @@ function renderTopProducers() {
 
 function renderRecentTests() {
     const tbody = document.getElementById('recentTestsBody');
+    
+    // Show loading state if data is still loading
+    if (appState.isLoading) {
+        tbody.innerHTML = '<tr><td colspan="6" class="dashboard-loading">' + LOADING_PLACEHOLDER + '</td></tr>';
+        return;
+    }
+    
     const recentTests = getRecentWellTests(10);
 
     if (recentTests.length === 0) {
@@ -85,6 +113,13 @@ function renderRecentTests() {
 
 function renderDashboardActionItems() {
     const list = document.getElementById('dashboardActionList');
+    
+    // Show loading state if data is still loading
+    if (appState.isLoading) {
+        list.innerHTML = '<li class="dashboard-loading" style="border-left-color: #6b7280;">' + LOADING_PLACEHOLDER + '</li>';
+        return;
+    }
+    
     const actionItems = getAllActionItems(15);
 
     if (actionItems.length === 0) {
