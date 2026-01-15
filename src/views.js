@@ -304,9 +304,9 @@ function renderWellsGrid(sheetId) {
     }
 
     grid.innerHTML = activeWells.map(well => {
-        const latestTest = well.wellTests && well.wellTests[0];
-        const latestOil = latestTest ? Math.round(latestTest.oil * 100) / 100 : null;
-        const latestGas = latestTest && latestTest.gas !== null ? Math.round(Math.max(0, latestTest.gas) * 100) / 100 : null;
+        const latestTest = well.latestTest || (well.wellTests && well.wellTests[0]);
+        const latestOil = latestTest && latestTest.oil !== undefined ? Math.round(latestTest.oil * 100) / 100 : null;
+        const latestGas = latestTest && latestTest.gas !== undefined && latestTest.gas !== null ? Math.round(Math.max(0, latestTest.gas) * 100) / 100 : null;
 
         return `
             <div class="well-card" data-well-id="${well.id}" data-sheet-id="${sheetId}">
