@@ -669,68 +669,36 @@
                 </div>
             </div>
 
-            <!-- Battery/Run Tickets View -->
+            <!-- Battery View -->
             <div id="batteryView" class="view">
                 <header class="view-header">
                     <h2 id="batteryName">Battery Name</h2>
                     <span class="breadcrumb" id="batteryBreadcrumb"></span>
                 </header>
 
-                <div class="dashboard-grid battery-grid">
-                    <!-- Aggregated Production Chart -->
-                    <section class="card production-card">
-                        <h3>Production (All Wells)</h3>
-                        <div class="chart-container">
-                            <canvas id="batteryProductionChart"></canvas>
-                        </div>
-                    </section>
-
-                    <!-- Tank Volumes -->
-                    <section class="card">
-                        <h3>Tank Volumes</h3>
-                        <div class="table-container">
-                            <table id="tankTable">
-                                <thead>
-                                    <tr>
-                                        <th>Tank #</th>
-                                        <th>Ft</th>
-                                        <th>In</th>
-                                        <th>Bbl</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- Run Tickets -->
-                    <section class="card run-tickets-card">
-                        <h3>Run Tickets</h3>
-                        <div class="table-container">
-                            <table id="runTicketTable">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Ticket #</th>
-                                        <th>Tank</th>
-                                        <th>Ft (top)</th>
-                                        <th>In (top)</th>
-                                        <th>Ft (bttm)</th>
-                                        <th>In (bttm)</th>
-                                        <th>Vol</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- Action Items / Repairs -->
-                    <section class="card">
-                        <h3>Action Items / Repairs Needed</h3>
-                        <ul class="action-list" id="batteryActionList"></ul>
-                    </section>
+                <!-- Battery Stats -->
+                <div class="stats-grid stats-grid-3" id="batteryStats">
+                    <div class="stat-card-compact">
+                        <span class="stat-value" id="statBatteryOil">0</span>
+                        <span class="stat-label">Daily Oil (bbl)</span>
+                    </div>
+                    <div class="stat-card-compact">
+                        <span class="stat-value" id="statBatteryWater">0</span>
+                        <span class="stat-label">Daily Water (bbl)</span>
+                    </div>
+                    <div class="stat-card-compact">
+                        <span class="stat-value" id="statBatteryGas">0</span>
+                        <span class="stat-label">Daily Gas (mcf)</span>
+                    </div>
                 </div>
+
+                <!-- Wells List -->
+                <section class="card">
+                    <h3>Wells</h3>
+                    <div class="wells-grid" id="batteryWellsGrid">
+                        <p class="empty-message">Loading wells...</p>
+                    </div>
+                </section>
             </div>
 
             <!-- Aggregate Oil Chart View -->

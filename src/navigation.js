@@ -1,5 +1,5 @@
 import { GAUGE_SHEETS, appState } from './config.js';
-import { showView, updateWelcomeStats, showGaugeSheetView, showWellView } from './views.js';
+import { showView, updateWelcomeStats, showGaugeSheetView, showWellView, showBatteryView } from './views.js';
 import { showOilChartView, showWaterChartView, showGasChartView } from './charts/aggregate.js';
 import { loadWellsList } from './firestore-storage.js';
 
@@ -235,7 +235,7 @@ function createGaugeSheetNavItem(sheet) {
     navItem.addEventListener('click', async (e) => {
         e.stopPropagation();
         setActiveNavItem(navItem);
-        showGaugeSheetView(sheet.id);
+        showBatteryView(sheet.id);
 
         // Load wells on-demand when expanding
         if (hasMetadata && !wellsLoaded) {

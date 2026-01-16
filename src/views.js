@@ -3,7 +3,7 @@ import { formatDate } from './utils.js';
 import { renderProductionCharts } from './charts/production.js';
 import { initializeEditHandlers } from './edit-modal.js';
 import { renderDashboard } from './dashboard.js';
-import { hasUploadedData } from './data-aggregation.js';
+import { hasUploadedData, getBatteryStats } from './data-aggregation.js';
 import { loadWellDetails, loadWellsList, loadDashboardData as refreshDashboardData } from './firestore-storage.js';
 
 // CSV Download utility functions
@@ -115,6 +115,128 @@ export async function showGaugeSheetView(sheetId) {
     }
 
     renderWellsGrid(sheetId);
+}
+
+export async function showBatteryView(sheetId) {
+    const sheetConfig = GAUGE_SHEETS.find(s => s.id === sheetId);
+    if (!sheetConfig) return;
+
+    appState.currentSheet = sheetId;
+    showView('battery');
+
+    // Update header
+    document.getElementById('batteryName').textContent = sheetConfig.name;
+    document.getElementById('batteryBreadcrumb').textContent = `Battery: ${sheetConfig.name}`;
+
+    const sheetData = appState.appData[sheetId];
+
+    // Load wells list if not loaded
+    if (!sheetData || !sheetData._wellsLoaded) {
+        showBatteryLoadingState();
+        
+        if (sheetData && sheetData._metadataLoaded) {
+            await loadWellsList(sheetId);
+        }
+    }
+
+    // Render battery stats
+    renderBatteryStats(sheetId);
+
+    // Render wells grid
+    renderBatteryWellsGrid(sheetId);
+}
+
+function showBatteryLoadingState() {
+    const loadingHTML = '<div class="loading-placeholder"><div class="loading-spinner-small"></div><span>Loading battery data...</span></div>';
+    
+    // Stats cards
+    const statBatteryOil = document.getElementById('statBatteryOil');
+    const statBatteryWater = document.getElementById('statBatteryWater');
+    const statBatteryGas = document.getElementById('statBatteryGas');
+    
+    if (statBatteryOil) statBatteryOil.innerHTML = '<span class="loading-text">...</span>';
+    if (statBatteryWater) statBatteryWater.innerHTML = '<span class="loading-text">...</span>';
+    if (statBatteryGas) statBatteryGas.innerHTML = '<span class="loading-text">...</span>';
+    
+    // Wells grid
+    const wellsGrid = document.getElementById('batteryWellsGrid');
+    if (wellsGrid) {
+        wellsGrid.innerHTML = loadingHTML;
+    }
+}
+
+function renderBatteryStats(sheetId) {
+    const statBatteryOil = document.getElementById('statBatteryOil');
+    const statBatteryWater = document.getElementById('statBatteryWater');
+    const statBatteryGas = document.getElementById('statBatteryGas');
+    
+    const sheetData = appState.appData[sheetId];
+    
+    if (!sheetData || !sheetData._metadataLoaded) {
+        // No data uploaded yet
+        if (statBatteryOil) statBatteryOil.textContent = '-';
+        if (statBatteryWater) statBatteryWater.textContent = '-';
+        if (statBatteryGas) statBatteryGas.textContent = '-';
+        return;
+    }
+    
+    const stats = getBatteryStats(sheetId);
+    
+    if (statBatteryOil) statBatteryOil.textContent = stats.totalOil.toLocaleString();
+    if (statBatteryWater) statBatteryWater.textContent = stats.totalWater.toLocaleString();
+    if (statBatteryGas) statBatteryGas.textContent = stats.totalGas.toLocaleString();
+}
+
+function renderBatteryWellsGrid(sheetId) {
+    const grid = document.getElementById('batteryWellsGrid');
+    const sheetData = appState.appData[sheetId];
+
+    if (!sheetData || !sheetData._metadataLoaded) {
+        grid.innerHTML = '<p class="empty-message">No data uploaded for this battery</p>';
+        return;
+    }
+
+    if (!sheetData.wells || sheetData.wells.length === 0) {
+        grid.innerHTML = '<p class="empty-message">No wells found</p>';
+        return;
+    }
+
+    const activeWells = sheetData.wells.filter(w => w.status !== 'inactive');
+
+    if (activeWells.length === 0) {
+        grid.innerHTML = '<p class="empty-message">No active wells</p>';
+        return;
+    }
+
+    grid.innerHTML = activeWells.map(well => {
+        const latestTest = well.latestTest || (well.wellTests && well.wellTests[0]);
+        const latestOil = latestTest && latestTest.oil !== undefined ? Math.round(latestTest.oil * 100) / 100 : null;
+        const latestGas = latestTest && latestTest.gas !== undefined && latestTest.gas !== null ? Math.round(Math.max(0, latestTest.gas) * 100) / 100 : null;
+
+        return `
+            <div class="well-card" data-well-id="${well.id}" data-sheet-id="${sheetId}">
+                <h4>${well.name}</h4>
+                <div class="well-stats">
+                    <div class="well-stat">
+                        <span class="well-stat-label">Latest Oil</span>
+                        <span class="well-stat-value">${latestOil !== null ? latestOil + ' bbl' : '-'}</span>
+                    </div>
+                    <div class="well-stat">
+                        <span class="well-stat-label">Latest Gas</span>
+                        <span class="well-stat-value">${latestGas !== null ? latestGas + ' mcf' : '-'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    grid.querySelectorAll('.well-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const wellId = card.dataset.wellId;
+            const sheet = card.dataset.sheetId;
+            showWellView(sheet, wellId);
+        });
+    });
 }
 
 export async function showWellView(sheetId, wellId) {

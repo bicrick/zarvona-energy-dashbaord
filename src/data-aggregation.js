@@ -370,6 +370,40 @@ export function getAllActionItems(limit = 15) {
     return allItems.slice(0, limit);
 }
 
+// Battery-level statistics
+export function getBatteryStats(sheetId) {
+    const sheetData = appState.appData[sheetId];
+    if (!sheetData?.wells) return { totalOil: 0, totalWater: 0, totalGas: 0 };
+    
+    let totalOil = 0, totalWater = 0, totalGas = 0;
+    const today = getTodayEnd();
+    
+    sheetData.wells.forEach(well => {
+        if (well.status === 'inactive') return;
+        
+        // Use latestProduction if available, otherwise latest well test
+        if (well.latestProduction) {
+            totalOil += Number(well.latestProduction.oil) || 0;
+            totalWater += Number(well.latestProduction.water) || 0;
+            totalGas += Math.max(0, Number(well.latestProduction.gas) || 0);
+        } else if (well.wellTests?.length > 0) {
+            const validTests = well.wellTests.filter(t => new Date(t.date) <= today);
+            if (validTests.length > 0) {
+                const latest = validTests[0];
+                totalOil += Number(latest.oil) || 0;
+                totalWater += Number(latest.water) || 0;
+                totalGas += Math.max(0, Number(latest.gas) || 0);
+            }
+        }
+    });
+    
+    return {
+        totalOil: roundValue(totalOil),
+        totalWater: roundValue(totalWater),
+        totalGas: roundValue(totalGas)
+    };
+}
+
 // Check if data has been uploaded
 export function hasUploadedData() {
     return Object.values(appState.appData).some(
