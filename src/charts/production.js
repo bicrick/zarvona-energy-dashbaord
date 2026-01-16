@@ -47,10 +47,12 @@ export function renderProductionCharts(well, startDate = null, endDate = null) {
 
     const availableCharts = chartConfigs.filter(config => {
         const dataSource = config.source === 'production' ? production : wellTests;
+        // Check if there's at least one non-zero, non-null value
         return dataSource.some(item =>
             item[config.dataKey] !== null &&
             item[config.dataKey] !== undefined &&
-            !isNaN(item[config.dataKey])
+            !isNaN(item[config.dataKey]) &&
+            item[config.dataKey] !== 0
         );
     });
 

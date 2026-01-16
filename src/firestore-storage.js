@@ -841,65 +841,66 @@ export async function clearExtractedDataOnly(progressCallback = null) {
             const sheetData = sheetDoc.data();
             logProgress(`Processing ${i + 1}/${totalSheets}: ${sheetData.name || sheetId}`);
             
-            // Delete wells' production and test data, but preserve manual fields
-            const wellsColl = collection(db, `gaugeSheets/${sheetId}/wells`);
-            const wellsSnapshot = await getDocs(wellsColl);
-            const totalWells = wellsSnapshot.docs.length;
-            
-            logProgress(`Clearing production data for ${totalWells} wells...`);
-            
-            for (const wellDoc of wellsSnapshot.docs) {
-                const wellId = wellDoc.id;
+            try {
+                // Delete wells' production and test data, but preserve manual fields
+                const wellsColl = collection(db, `gaugeSheets/${sheetId}/wells`);
+                const wellsSnapshot = await getDocs(wellsColl);
+                const totalWells = wellsSnapshot.docs.length;
                 
-                // Delete production subcollection
-                const productionColl = collection(db, `gaugeSheets/${sheetId}/wells/${wellId}/production`);
-                const productionSnapshot = await getDocs(productionColl);
-                for (const prodDoc of productionSnapshot.docs) {
-                    await deleteDoc(prodDoc.ref);
+                logProgress(`Clearing production data for ${totalWells} wells...`);
+                
+                let wellsProcessed = 0;
+                for (const wellDoc of wellsSnapshot.docs) {
+                    const wellId = wellDoc.id;
+                    wellsProcessed++;
+                    logProgress(`Clearing well ${wellsProcessed}/${totalWells}: ${wellId}`);
+                    
+                    // Delete production subcollection in batches
+                    await deleteBatchedSubcollection(
+                        db, 
+                        `gaugeSheets/${sheetId}/wells/${wellId}/production`
+                    );
+                    
+                    // Delete well tests subcollection in batches
+                    await deleteBatchedSubcollection(
+                        db, 
+                        `gaugeSheets/${sheetId}/wells/${wellId}/wellTests`
+                    );
+                    
+                    // Update well document to clear computed fields, but preserve manual fields
+                    const wellRef = doc(db, `gaugeSheets/${sheetId}/wells`, wellId);
+                    await setDoc(wellRef, {
+                        latestProduction: null,
+                        latestTest: null,
+                        dailyStats: null,
+                        hasActionItems: wellDoc.data().hasActionItems || false
+                        // Keep: actionItems, chemicalProgram, failureHistory, pressureReadings
+                    }, { merge: true });
                 }
                 
-                // Delete well tests subcollection
-                const wellTestsColl = collection(db, `gaugeSheets/${sheetId}/wells/${wellId}/wellTests`);
-                const wellTestsSnapshot = await getDocs(wellTestsColl);
-                for (const testDoc of wellTestsSnapshot.docs) {
-                    await deleteDoc(testDoc.ref);
-                }
+                logProgress(`Clearing battery production and run tickets...`);
                 
-                // Update well document to clear computed fields, but preserve manual fields
-                const wellRef = doc(db, `gaugeSheets/${sheetId}/wells`, wellId);
-                await setDoc(wellRef, {
-                    latestProduction: null,
-                    latestTest: null,
-                    dailyStats: null,
-                    hasActionItems: wellDoc.data().hasActionItems || false
-                    // Keep: actionItems, chemicalProgram, failureHistory, pressureReadings
+                // Delete battery production in batches
+                await deleteBatchedSubcollection(db, `gaugeSheets/${sheetId}/batteryProduction`);
+                
+                // Delete run tickets in batches
+                await deleteBatchedSubcollection(db, `gaugeSheets/${sheetId}/runTickets`);
+                
+                // Update sheet document to clear extracted data metadata
+                const sheetRef = doc(db, 'gaugeSheets', sheetId);
+                await setDoc(sheetRef, {
+                    lastUpdated: Timestamp.now(),
+                    rawRowCount: 0,
+                    wellList: [],
+                    wellCount: 0
                 }, { merge: true });
+                
+                logProgress(`✓ Cleared extracted data for ${sheetData.name || sheetId}`);
+            } catch (error) {
+                logProgress(`⚠ Error clearing ${sheetData.name || sheetId}: ${error.message}`);
+                console.error(`Error clearing sheet ${sheetId}:`, error);
+                // Continue with next sheet instead of stopping
             }
-            
-            logProgress(`Clearing battery production and run tickets...`);
-            
-            // Delete battery production
-            const batteryProdColl = collection(db, `gaugeSheets/${sheetId}/batteryProduction`);
-            const batteryProdSnapshot = await getDocs(batteryProdColl);
-            for (const prodDoc of batteryProdSnapshot.docs) {
-                await deleteDoc(prodDoc.ref);
-            }
-            
-            // Delete run tickets
-            const runTicketsColl = collection(db, `gaugeSheets/${sheetId}/runTickets`);
-            const runTicketsSnapshot = await getDocs(runTicketsColl);
-            for (const ticketDoc of runTicketsSnapshot.docs) {
-                await deleteDoc(ticketDoc.ref);
-            }
-            
-            // Update sheet document to clear extracted data metadata
-            const sheetRef = doc(db, 'gaugeSheets', sheetId);
-            await setDoc(sheetRef, {
-                lastUpdated: Timestamp.now(),
-                rawRowCount: 0,
-                wellList: [],
-                wellCount: 0
-            }, { merge: true });
         }
         
         logProgress('Clearing local state...');
