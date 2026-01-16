@@ -1,109 +1,131 @@
 import { appState, GAUGE_SHEETS } from './config.js';
 
+// Data validation and cleaning utilities
+const DATA_QUALITY_THRESHOLDS = {
+    water: 10000,  // Maximum valid daily water production (BBL)
+    gas: 10000     // Maximum valid daily gas production (MCF)
+};
+
+function isValidValue(value) {
+    return value !== null && value !== undefined && !isNaN(value);
+}
+
+function sanitizeValue(dataType, value) {
+    if (!isValidValue(value)) return null;
+    
+    const numValue = Number(value);
+    
+    // Negative gas values are invalid
+    if (dataType === 'gas' && numValue < 0) return 0;
+    
+    // Filter out unrealistic values for water and gas
+    const threshold = DATA_QUALITY_THRESHOLDS[dataType];
+    if (threshold && numValue > threshold) return null;
+    
+    return numValue;
+}
+
+function roundValue(value) {
+    return Math.round(value * 100) / 100;
+}
+
+// Date utilities
+function getTodayEnd() {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return today;
+}
+
+function getBucketDate(date, aggregation) {
+    const bucketDate = new Date(date);
+    
+    if (aggregation === 'week') {
+        const day = bucketDate.getUTCDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        bucketDate.setUTCDate(bucketDate.getUTCDate() + diff);
+    } else if (aggregation === 'month') {
+        bucketDate.setUTCDate(1);
+    }
+    
+    bucketDate.setUTCHours(0, 0, 0, 0);
+    return bucketDate;
+}
+
+function isInDateRange(date, startDate, endDate) {
+    const time = date.getTime();
+    if (startDate && time < startDate.getTime()) return false;
+    if (endDate && time > endDate.getTime()) return false;
+    return true;
+}
+
+// Aggregate statistics
 export function getAggregateStats() {
     let totalOil = 0;
     let totalWater = 0;
     let totalGas = 0;
 
-    // Use optimized dashboard data if available
-    if (appState.dashboardData && appState.dashboardData.topProducers) {
-        // Aggregate from all wells in the system (not just top producers)
-        // We'll iterate through appData but use latestProduction from wells
-        Object.keys(appState.appData).forEach(sheetId => {
-            const sheet = appState.appData[sheetId];
-            if (!sheet) return;
+    if (appState.dashboardData?.topProducers) {
+        Object.values(appState.appData).forEach(sheet => {
+            if (!sheet?.wells) return;
 
-            // If wells are loaded with latestProduction, use that
-            if (sheet.wells && sheet.wells.length > 0) {
-                sheet.wells.forEach(well => {
-                    if (well.status === 'inactive') return;
-                    
-                    // Check if well has latestProduction (from optimized structure)
-                    if (well.latestProduction) {
-                        totalOil += Number(well.latestProduction.oil) || 0;
-                        totalWater += Number(well.latestProduction.water) || 0;
-                        totalGas += Math.max(0, Number(well.latestProduction.gas) || 0);
-                    }
-                });
-            }
+            sheet.wells.forEach(well => {
+                if (well.status === 'inactive' || !well.latestProduction) return;
+                
+                totalOil += Number(well.latestProduction.oil) || 0;
+                totalWater += Number(well.latestProduction.water) || 0;
+                totalGas += Math.max(0, Number(well.latestProduction.gas) || 0);
+            });
         });
         
-        // If we got data, return it
         if (totalOil > 0 || totalWater > 0 || totalGas > 0) {
             return {
-                totalOil: Math.round(totalOil * 100) / 100,
-                totalWater: Math.round(totalWater * 100) / 100,
-                totalGas: Math.round(totalGas * 100) / 100
+                totalOil: roundValue(totalOil),
+                totalWater: roundValue(totalWater),
+                totalGas: roundValue(totalGas)
             };
         }
     }
 
-    // Fallback to old method
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    // Fallback: use battery production or well tests
+    const today = getTodayEnd();
 
-    Object.keys(appState.appData).forEach(sheetId => {
-        const sheet = appState.appData[sheetId];
+    Object.values(appState.appData).forEach(sheet => {
         if (!sheet) return;
 
-        // Use battery production if available, otherwise fall back to well tests
-        if (sheet.batteryProduction && sheet.batteryProduction.length > 0) {
-            // Get the latest battery production entry
-            const validProduction = sheet.batteryProduction.filter(p => {
-                const prodDate = new Date(p.date);
-                return prodDate <= today;
-            });
+        if (sheet.batteryProduction?.length > 0) {
+            const validProduction = sheet.batteryProduction
+                .filter(p => new Date(p.date) <= today)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             if (validProduction.length > 0) {
-                // Sort by date descending and get the most recent
-                validProduction.sort((a, b) => new Date(b.date) - new Date(a.date));
                 const latest = validProduction[0];
-                
-                if (latest.oil !== null && !isNaN(latest.oil)) {
-                    totalOil += Number(latest.oil);
-                }
-                if (latest.water !== null && !isNaN(latest.water)) {
-                    totalWater += Number(latest.water);
-                }
-                if (latest.gas !== null && !isNaN(latest.gas)) {
-                    totalGas += Math.max(0, Number(latest.gas));
-                }
+                if (isValidValue(latest.oil)) totalOil += Number(latest.oil);
+                if (isValidValue(latest.water)) totalWater += Number(latest.water);
+                if (isValidValue(latest.gas)) totalGas += Math.max(0, Number(latest.gas));
             }
-        } else if (sheet.wells && sheet.wells.length > 0) {
-            // Fall back to aggregating well tests
+        } else if (sheet.wells?.length > 0) {
             sheet.wells.forEach(well => {
-                if (well.status === 'inactive') return;
+                if (well.status === 'inactive' || !well.wellTests?.length) return;
 
-                if (well.wellTests && well.wellTests.length > 0) {
-                    const validTests = well.wellTests.filter(t => {
-                        const testDate = new Date(t.date);
-                        return testDate <= today;
-                    });
+                const validTests = well.wellTests.filter(t => new Date(t.date) <= today);
+                if (validTests.length === 0) return;
 
-                    if (validTests.length > 0) {
-                        const latestTest = validTests[0];
-                        if (latestTest.oil !== null && !isNaN(latestTest.oil)) {
-                            totalOil += Number(latestTest.oil);
-                        }
-                        if (latestTest.water !== null && !isNaN(latestTest.water)) {
-                            totalWater += Number(latestTest.water);
-                        }
-                        if (latestTest.gas !== null && !isNaN(latestTest.gas)) {
-                            totalGas += Math.max(0, Number(latestTest.gas));
-                        }
-                    }
-                }
+                const latestTest = validTests[0];
+                if (isValidValue(latestTest.oil)) totalOil += Number(latestTest.oil);
+                if (isValidValue(latestTest.water)) totalWater += Number(latestTest.water);
+                if (isValidValue(latestTest.gas)) totalGas += Math.max(0, Number(latestTest.gas));
             });
         }
     });
 
     return {
-        totalOil: Math.round(totalOil * 100) / 100,
-        totalWater: Math.round(totalWater * 100) / 100,
-        totalGas: Math.round(totalGas * 100) / 100
+        totalOil: roundValue(totalOil),
+        totalWater: roundValue(totalWater),
+        totalGas: roundValue(totalGas)
     };
 }
 
+// Battery production time series
 export function getBatteryProductionTimeSeries(
     dataType = 'oil',
     startDate = null,
@@ -114,77 +136,49 @@ export function getBatteryProductionTimeSeries(
     const dateMap = new Map();
     let minDate = null;
     let maxDate = null;
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const today = getTodayEnd();
 
-    const getBucketDate = (date) => {
-        const bucketDate = new Date(date);
-        if (aggregation === 'week') {
-            const day = bucketDate.getUTCDay();
-            const diff = day === 0 ? -6 : 1 - day;
-            bucketDate.setUTCDate(bucketDate.getUTCDate() + diff);
-        } else if (aggregation === 'month') {
-            bucketDate.setUTCDate(1);
-        }
-        bucketDate.setUTCHours(0, 0, 0, 0);
-        return bucketDate;
-    };
-
-    Object.keys(appState.appData).forEach(sheetId => {
-        const sheet = appState.appData[sheetId];
+    Object.entries(appState.appData).forEach(([sheetId, sheet]) => {
         if (!sheet) return;
         
-        // Filter by selected batteries
-        if (selectedBatteries && !selectedBatteries.has(sheetId)) return;
+        // If selectedBatteries is provided and not empty, filter by it
+        // If selectedBatteries is an empty Set, skip all batteries (show no data)
+        if (selectedBatteries !== null) {
+            if (selectedBatteries.size === 0) return; // Empty Set = no batteries selected
+            if (!selectedBatteries.has(sheetId)) return; // Battery not in selection
+        }
 
         const batteryProduction = sheet.batteryProduction || [];
 
         batteryProduction.forEach(item => {
-            if (!item.date) return;
-
             const date = new Date(item.date);
-            if (isNaN(date.getTime())) return;
-            if (date > today) return;
+            if (!item.date || isNaN(date.getTime()) || date > today) return;
 
-            let value = item[dataType];
-            if (value === null || value === undefined || isNaN(value)) return;
+            const value = sanitizeValue(dataType, item[dataType]);
+            if (value === null) return;
 
-            if (dataType === 'gas' && value < 0) value = 0;
-
-            const bucketDate = getBucketDate(date);
+            const bucketDate = getBucketDate(date, aggregation);
+            const dateKey = bucketDate.toISOString().split('T')[0];
 
             if (!minDate || bucketDate < minDate) minDate = bucketDate;
             if (!maxDate || bucketDate > maxDate) maxDate = bucketDate;
 
-            const dateKey = bucketDate.toISOString().split('T')[0];
-            const currentVal = dateMap.get(dateKey) || 0;
-            dateMap.set(dateKey, currentVal + Number(value));
+            dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + value);
         });
     });
 
     let data = Array.from(dateMap.entries())
-        .map(([dateStr, value]) => ({
-            x: new Date(dateStr),
-            y: value
-        }))
+        .map(([dateStr, value]) => ({ x: new Date(dateStr), y: value }))
         .sort((a, b) => a.x - b.x);
 
     if (startDate || endDate) {
-        data = data.filter(point => {
-            const pointTime = point.x.getTime();
-            if (startDate && pointTime < startDate.getTime()) return false;
-            if (endDate && pointTime > endDate.getTime()) return false;
-            return true;
-        });
+        data = data.filter(point => isInDateRange(point.x, startDate, endDate));
     }
 
-    return {
-        data,
-        dateRange: { min: minDate, max: maxDate }
-    };
+    return { data, dateRange: { min: minDate, max: maxDate } };
 }
 
-// Keep the old function for backward compatibility (used by dashboard stats)
+// Well production time series (for backward compatibility)
 export function getAggregateProductionTimeSeries(
     dataType = 'oil',
     startDate = null,
@@ -195,253 +189,190 @@ export function getAggregateProductionTimeSeries(
     const dateMap = new Map();
     let minDate = null;
     let maxDate = null;
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const today = getTodayEnd();
 
-    const getBucketDate = (date) => {
-        const bucketDate = new Date(date);
-        if (aggregation === 'week') {
-            const day = bucketDate.getUTCDay();
-            const diff = day === 0 ? -6 : 1 - day;
-            bucketDate.setUTCDate(bucketDate.getUTCDate() + diff);
-        } else if (aggregation === 'month') {
-            bucketDate.setUTCDate(1);
-        }
-        bucketDate.setUTCHours(0, 0, 0, 0);
-        return bucketDate;
-    };
+    Object.values(appState.appData).forEach(sheet => {
+        if (!sheet?.wells) return;
 
-    Object.keys(appState.appData).forEach(sheetId => {
-        const sheet = appState.appData[sheetId];
-        if (sheet && sheet.wells && sheet.wells.length > 0) {
-            sheet.wells.forEach(well => {
-                if (well.status === 'inactive') return;
-                if (selectedWells && !selectedWells.has(well.id)) return;
+        sheet.wells.forEach(well => {
+            if (well.status === 'inactive') return;
+            
+            // If selectedWells is provided and not empty, filter by it
+            // If selectedWells is an empty Set, skip all wells (show no data)
+            if (selectedWells !== null) {
+                if (selectedWells.size === 0) return; // Empty Set = no wells selected
+                if (!selectedWells.has(well.id)) return; // Well not in selection
+            }
 
-                const production = well.production || [];
+            const production = well.production || [];
 
-                production.forEach(item => {
-                    if (!item.date) return;
+            production.forEach(item => {
+                const date = new Date(item.date);
+                if (!item.date || isNaN(date.getTime()) || date > today) return;
 
-                    const date = new Date(item.date);
-                    if (isNaN(date.getTime())) return;
-                    if (date > today) return;
+                const value = sanitizeValue(dataType, item[dataType]);
+                if (value === null) return;
 
-                    let value = item[dataType];
-                    if (value === null || value === undefined || isNaN(value)) return;
+                const bucketDate = getBucketDate(date, aggregation);
+                const dateKey = bucketDate.toISOString().split('T')[0];
 
-                    if (dataType === 'gas' && value < 0) value = 0;
+                if (!minDate || bucketDate < minDate) minDate = bucketDate;
+                if (!maxDate || bucketDate > maxDate) maxDate = bucketDate;
 
-                    const bucketDate = getBucketDate(date);
-
-                    if (!minDate || bucketDate < minDate) minDate = bucketDate;
-                    if (!maxDate || bucketDate > maxDate) maxDate = bucketDate;
-
-                    const dateKey = bucketDate.toISOString().split('T')[0];
-                    const currentVal = dateMap.get(dateKey) || 0;
-                    dateMap.set(dateKey, currentVal + Number(value));
-                });
+                dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + value);
             });
-        }
+        });
     });
 
     let data = Array.from(dateMap.entries())
-        .map(([dateStr, value]) => ({
-            x: new Date(dateStr),
-            y: value
-        }))
+        .map(([dateStr, value]) => ({ x: new Date(dateStr), y: value }))
         .sort((a, b) => a.x - b.x);
 
     if (startDate || endDate) {
-        data = data.filter(point => {
-            const pointTime = point.x.getTime();
-            if (startDate && pointTime < startDate.getTime()) return false;
-            if (endDate && pointTime > endDate.getTime()) return false;
-            return true;
-        });
+        data = data.filter(point => isInDateRange(point.x, startDate, endDate));
     }
 
-    return {
-        data,
-        dateRange: { min: minDate, max: maxDate }
-    };
+    return { data, dateRange: { min: minDate, max: maxDate } };
 }
 
+// Top producing wells
 export function getTopProducingWells(limit = 10) {
-    // Use optimized dashboard data if available
-    if (appState.dashboardData && appState.dashboardData.topProducers) {
+    if (appState.dashboardData?.topProducers) {
         return appState.dashboardData.topProducers.slice(0, limit).map(well => {
             const sheetConfig = GAUGE_SHEETS.find(s => s.id === well.sheetId);
             return {
                 wellId: well.id,
                 wellName: well.name,
                 sheetId: well.sheetId,
-                batteryName: sheetConfig ? sheetConfig.name : 'Unknown',
-                oil: well.latestProduction ? Math.round(Number(well.latestProduction.oil) * 100) / 100 : 0,
-                water: well.latestProduction ? Math.round(Number(well.latestProduction.water) * 100) / 100 : 0
+                batteryName: sheetConfig?.name || 'Unknown',
+                oil: well.latestProduction ? roundValue(well.latestProduction.oil) : 0,
+                water: well.latestProduction ? roundValue(well.latestProduction.water) : 0
             };
         });
     }
 
-    // Fallback to old method if dashboard data not loaded
+    // Fallback
     const allWells = [];
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const today = getTodayEnd();
 
-    Object.keys(appState.appData).forEach(sheetId => {
-        const sheet = appState.appData[sheetId];
+    Object.entries(appState.appData).forEach(([sheetId, sheet]) => {
         const sheetConfig = GAUGE_SHEETS.find(s => s.id === sheetId);
+        if (!sheet?.wells || !sheetConfig) return;
 
-        if (sheet && sheet.wells && sheetConfig) {
-            sheet.wells.forEach(well => {
-                if (well.status === 'inactive') return;
+        sheet.wells.forEach(well => {
+            if (well.status === 'inactive') return;
 
-                let latestOil = null;
-                let latestWater = null;
+            let latestOil = 0;
+            let latestWater = 0;
 
-                if (well.wellTests && well.wellTests.length > 0) {
-                    const validTests = well.wellTests.filter(t => new Date(t.date) <= today);
-                    if (validTests.length > 0) {
-                        const latestTest = validTests[0];
-                        latestOil = latestTest.oil;
-                        latestWater = latestTest.water;
-                    }
+            if (well.wellTests?.length > 0) {
+                const validTests = well.wellTests.filter(t => new Date(t.date) <= today);
+                if (validTests.length > 0) {
+                    const latestTest = validTests[0];
+                    latestOil = latestTest.oil;
+                    latestWater = latestTest.water;
                 }
+            }
 
-                allWells.push({
-                    wellId: well.id,
-                    wellName: well.name,
-                    sheetId: sheetId,
-                    batteryName: sheetConfig.name,
-                    oil: latestOil !== null ? Math.round(Number(latestOil) * 100) / 100 : 0,
-                    water: latestWater !== null ? Math.round(Number(latestWater) * 100) / 100 : 0
-                });
+            allWells.push({
+                wellId: well.id,
+                wellName: well.name,
+                sheetId,
+                batteryName: sheetConfig.name,
+                oil: isValidValue(latestOil) ? roundValue(latestOil) : 0,
+                water: isValidValue(latestWater) ? roundValue(latestWater) : 0
             });
-        }
+        });
     });
 
-    allWells.sort((a, b) => b.oil - a.oil);
-
-    return allWells.slice(0, limit);
+    return allWells.sort((a, b) => b.oil - a.oil).slice(0, limit);
 }
 
+// Recent well tests
 export function getRecentWellTests(limit = 10) {
-    // Use optimized dashboard data if available
-    if (appState.dashboardData && appState.dashboardData.recentTests) {
+    if (appState.dashboardData?.recentTests) {
         return appState.dashboardData.recentTests.slice(0, limit).map(well => {
             const sheetConfig = GAUGE_SHEETS.find(s => s.id === well.sheetId);
-            const testDate = well.latestTest && well.latestTest.date ? 
-                (well.latestTest.date.toDate ? well.latestTest.date.toDate() : new Date(well.latestTest.date)) : 
-                new Date();
+            const testDate = well.latestTest?.date
+                ? (well.latestTest.date.toDate?.() || new Date(well.latestTest.date))
+                : new Date();
             
             return {
                 date: testDate,
                 wellId: well.id,
                 wellName: well.name,
                 sheetId: well.sheetId,
-                batteryName: sheetConfig ? sheetConfig.name : 'Unknown',
-                oil: well.latestTest ? Math.round(Number(well.latestTest.oil) * 100) / 100 : null,
-                water: well.latestTest ? Math.round(Number(well.latestTest.water) * 100) / 100 : null,
-                gas: well.latestTest ? Math.round(Math.max(0, Number(well.latestTest.gas)) * 100) / 100 : null
+                batteryName: sheetConfig?.name || 'Unknown',
+                oil: well.latestTest ? roundValue(well.latestTest.oil) : null,
+                water: well.latestTest ? roundValue(well.latestTest.water) : null,
+                gas: well.latestTest ? roundValue(Math.max(0, well.latestTest.gas)) : null
             };
         });
     }
 
-    // Fallback to old method if dashboard data not loaded
+    // Fallback
     const allTests = [];
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const today = getTodayEnd();
 
-    Object.keys(appState.appData).forEach(sheetId => {
-        const sheet = appState.appData[sheetId];
+    Object.entries(appState.appData).forEach(([sheetId, sheet]) => {
         const sheetConfig = GAUGE_SHEETS.find(s => s.id === sheetId);
+        if (!sheet?.wells || !sheetConfig) return;
 
-        if (sheet && sheet.wells && sheetConfig) {
-            sheet.wells.forEach(well => {
-                if (well.status === 'inactive') return;
+        sheet.wells.forEach(well => {
+            if (well.status === 'inactive' || !well.wellTests) return;
 
-                if (well.wellTests && well.wellTests.length > 0) {
-                    well.wellTests.forEach(test => {
-                        if (test.date) {
-                            const testDate = new Date(test.date);
-                            if (testDate > today) return;
+            well.wellTests.forEach(test => {
+                const testDate = new Date(test.date);
+                if (!test.date || testDate > today) return;
 
-                            allTests.push({
-                                date: testDate,
-                                wellId: well.id,
-                                wellName: well.name,
-                                sheetId: sheetId,
-                                batteryName: sheetConfig.name,
-                                oil: test.oil !== null ? Math.round(test.oil * 100) / 100 : null,
-                                water: test.water !== null ? Math.round(test.water * 100) / 100 : null,
-                                gas: test.gas !== null ? Math.round(Math.max(0, test.gas) * 100) / 100 : null
-                            });
-                        }
-                    });
-                }
+                allTests.push({
+                    date: testDate,
+                    wellId: well.id,
+                    wellName: well.name,
+                    sheetId,
+                    batteryName: sheetConfig.name,
+                    oil: isValidValue(test.oil) ? roundValue(test.oil) : null,
+                    water: isValidValue(test.water) ? roundValue(test.water) : null,
+                    gas: isValidValue(test.gas) ? roundValue(Math.max(0, test.gas)) : null
+                });
             });
-        }
+        });
     });
 
-    allTests.sort((a, b) => b.date - a.date);
-
-    return allTests.slice(0, limit);
+    return allTests.sort((a, b) => b.date - a.date).slice(0, limit);
 }
 
+// Action items
 export function getAllActionItems(limit = 15) {
-    // Use optimized dashboard data if available
-    if (appState.dashboardData && appState.dashboardData.actionItems) {
-        const allItems = [];
-        appState.dashboardData.actionItems.forEach(well => {
-            const sheetConfig = GAUGE_SHEETS.find(s => s.id === well.sheetId);
-            if (well.actionItems && well.actionItems.length > 0) {
-                well.actionItems.forEach(item => {
-                    if (item && item.trim()) {
-                        allItems.push({
-                            content: item,
-                            wellId: well.id,
-                            wellName: well.name,
-                            sheetId: well.sheetId,
-                            batteryName: sheetConfig ? sheetConfig.name : 'Unknown'
-                        });
-                    }
+    const allItems = [];
+
+    const wells = appState.dashboardData?.actionItems || 
+        Object.values(appState.appData).flatMap(sheet => sheet?.wells || []);
+
+    wells.forEach(well => {
+        if (well.status === 'inactive' || !well.actionItems?.length) return;
+
+        const sheetConfig = GAUGE_SHEETS.find(s => s.id === well.sheetId);
+        
+        well.actionItems.forEach(item => {
+            if (item?.trim()) {
+                allItems.push({
+                    content: item,
+                    wellId: well.id,
+                    wellName: well.name,
+                    sheetId: well.sheetId,
+                    batteryName: sheetConfig?.name || 'Unknown'
                 });
             }
         });
-        return allItems.slice(0, limit);
-    }
-
-    // Fallback to old method if dashboard data not loaded
-    const allItems = [];
-
-    Object.keys(appState.appData).forEach(sheetId => {
-        const sheet = appState.appData[sheetId];
-        const sheetConfig = GAUGE_SHEETS.find(s => s.id === sheetId);
-
-        if (sheet && sheet.wells && sheetConfig) {
-            sheet.wells.forEach(well => {
-                if (well.status === 'inactive') return;
-
-                if (well.actionItems && well.actionItems.length > 0) {
-                    well.actionItems.forEach(item => {
-                        if (item && item.trim()) {
-                            allItems.push({
-                                content: item,
-                                wellId: well.id,
-                                wellName: well.name,
-                                sheetId: sheetId,
-                                batteryName: sheetConfig.name
-                            });
-                        }
-                    });
-                }
-            });
-        }
     });
 
     return allItems.slice(0, limit);
 }
 
+// Check if data has been uploaded
 export function hasUploadedData() {
-    return Object.keys(appState.appData).some(k => appState.appData[k] && appState.appData[k].wells && appState.appData[k].wells.length > 0);
+    return Object.values(appState.appData).some(
+        sheet => sheet?.wells?.length > 0
+    );
 }

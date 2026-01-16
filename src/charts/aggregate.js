@@ -287,12 +287,21 @@ function getSelectedBatteries(dataType) {
     const container = document.getElementById(containerIds[dataType]);
     if (!container) return null;
 
+    const checkboxes = container.querySelectorAll('.battery-checkbox');
+    
+    // If no checkboxes exist yet, return null to show all (initial state)
+    if (checkboxes.length === 0) return null;
+
     const selected = new Set();
-    container.querySelectorAll('.battery-checkbox:checked').forEach(cb => {
-        if (cb.dataset.battery) selected.add(cb.dataset.battery);
+    checkboxes.forEach(cb => {
+        if (cb.checked && cb.dataset.battery) {
+            selected.add(cb.dataset.battery);
+        }
     });
 
-    return selected.size > 0 ? selected : null;
+    // Return the Set even if empty - empty Set means show no data
+    // null means show all data (when filter hasn't been initialized)
+    return selected;
 }
 
 function rerenderAggregateChart(dataType) {
@@ -364,7 +373,8 @@ function populateBatteriesFilter(dataType) {
         toggleBtn.textContent = allChecked ? 'Deselect All' : 'Select All';
     };
 
-    const selectedBatteries = appState.chartState[dataType]?.selectedBatteries || null;
+    // Default to all batteries selected on first render
+    const selectedBatteries = appState.chartState[dataType]?.selectedBatteries;
 
     GAUGE_SHEETS.forEach(sheetConfig => {
         const sheetData = appState.appData[sheetConfig.id];
@@ -373,7 +383,9 @@ function populateBatteriesFilter(dataType) {
         // Check if battery has metadata (sheet has been loaded)
         if (!sheetData._metadataLoaded) return;
 
-        const isSelected = !selectedBatteries || selectedBatteries.has(sheetConfig.id);
+        // If selectedBatteries is null (first render), select all by default
+        // Otherwise, check if this battery is in the selected set
+        const isSelected = selectedBatteries === null || selectedBatteries.has(sheetConfig.id);
         
         // Get well count from cache or from loaded data
         const wellCount = appState.metadataCache.wellCounts[sheetConfig.id] || 
@@ -409,13 +421,16 @@ function populateBatteriesFilter(dataType) {
 
         newToggleBtn.addEventListener('click', () => {
             const batteryCheckboxes = container.querySelectorAll('.battery-checkbox');
-            const allChecked = Array.from(batteryCheckboxes).every(cb => cb.checked);
+            const currentText = newToggleBtn.textContent.trim();
+            
+            // Do what the button says: if it says "Select All", select all; if it says "Deselect All", deselect all
+            const shouldCheck = currentText === 'Select All';
 
             batteryCheckboxes.forEach(cb => {
-                cb.checked = !allChecked;
+                cb.checked = shouldCheck;
             });
 
-            newToggleBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+            newToggleBtn.textContent = shouldCheck ? 'Deselect All' : 'Select All';
             rerenderAggregateChart(dataType);
         });
 

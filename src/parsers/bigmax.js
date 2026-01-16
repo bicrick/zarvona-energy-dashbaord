@@ -49,6 +49,8 @@ export const BigMaxParser = {
 
     parseWellTestSheet(sheet) {
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         const wells = this.wells.map(w => ({
             id: w.id,
@@ -70,6 +72,11 @@ export const BigMaxParser = {
 
             const dateStr = this.parseDate(row[0]);
             if (!dateStr) continue;
+            
+            // Skip future dates
+            const rowDate = new Date(dateStr);
+            if (rowDate > today) continue;
+            
             rowCount++;
 
             this.wells.forEach((wellDef, idx) => {
@@ -96,13 +103,23 @@ export const BigMaxParser = {
     parseRunTicketsSheet(sheet) {
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
         const tickets = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         for (let i = 3; i < data.length; i++) {
             const row = data[i];
             if (!row || !row[1]) continue;
 
+            const dateStr = this.parseDate(row[0]);
+            
+            // Skip future dates
+            if (dateStr) {
+                const ticketDate = new Date(dateStr);
+                if (ticketDate > today) continue;
+            }
+
             tickets.push({
-                date: this.parseDate(row[0]),
+                date: dateStr,
                 ticketNum: String(row[1] || ''),
                 tank: this.parseNumber(row[2]),
                 ftTop: this.parseNumber(row[3]),

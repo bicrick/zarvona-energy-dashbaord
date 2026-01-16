@@ -133,6 +133,8 @@ export const SouthAndrewsParser = {
 
     parseWellTestSheet(sheet, wellDefs) {
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         const wells = wellDefs.map(w => ({
             id: w.id,
@@ -153,6 +155,11 @@ export const SouthAndrewsParser = {
 
             const dateStr = this.parseDate(row[0]);
             if (!dateStr) continue;
+            
+            // Skip future dates
+            const rowDate = new Date(dateStr);
+            if (rowDate > today) continue;
+            
             rowCount++;
 
             wellDefs.forEach((wellDef, idx) => {
@@ -179,13 +186,23 @@ export const SouthAndrewsParser = {
     parseRunTicketsSheet(sheet) {
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
         const tickets = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         for (let i = 3; i < data.length; i++) {
             const row = data[i];
             if (!row || !row[1]) continue;
 
+            const dateStr = this.parseDate(row[0]);
+            
+            // Skip future dates
+            if (dateStr) {
+                const ticketDate = new Date(dateStr);
+                if (ticketDate > today) continue;
+            }
+
             tickets.push({
-                date: this.parseDate(row[0]),
+                date: dateStr,
                 ticketNum: String(row[1] || ''),
                 tank: this.parseNumber(row[2]),
                 ftTop: this.parseNumber(row[3]),
@@ -201,6 +218,8 @@ export const SouthAndrewsParser = {
 
     parseBatteryProduction(workbook) {
         const productionMap = new Map();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         this.productionConfig.forEach(config => {
             const sheet = workbook.Sheets[config.sheet];
@@ -214,6 +233,10 @@ export const SouthAndrewsParser = {
                 if (!row) continue;
                 const dateStr = this.parseDate(row[config.dateCol]);
                 if (!dateStr) continue;
+
+                // Skip future dates
+                const prodDate = new Date(dateStr);
+                if (prodDate > today) continue;
 
                 const oil = this.parseNumber(row[config.oilProdCol]);
                 const water = this.parseNumber(row[config.waterProdCol]);
@@ -255,6 +278,9 @@ export const SouthAndrewsParser = {
             readingsByWell[id] = [];
         });
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         this.pressureConfig.forEach(config => {
             const sheet = workbook.Sheets[config.sheet];
             if (!sheet) return;
@@ -267,6 +293,10 @@ export const SouthAndrewsParser = {
                 if (!row) continue;
                 const dateStr = this.parseDate(row[config.dateCol]);
                 if (!dateStr) continue;
+
+                // Skip future dates
+                const readingDate = new Date(dateStr);
+                if (readingDate > today) continue;
 
                 Object.entries(config.wells).forEach(([wellId, cols]) => {
                     if (!readingsByWell[wellId]) return;

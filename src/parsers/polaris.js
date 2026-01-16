@@ -52,6 +52,8 @@ export const PolarisParser = {
 
     parseWellTestSheet(sheet) {
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         const wells = this.wells.map(w => ({
             id: w.id,
@@ -72,6 +74,11 @@ export const PolarisParser = {
 
             const dateStr = this.parseDate(row[0]);
             if (!dateStr) continue;
+            
+            // Skip future dates
+            const rowDate = new Date(dateStr);
+            if (rowDate > today) continue;
+            
             rowCount++;
 
             this.wells.forEach((wellDef, idx) => {
@@ -105,12 +112,18 @@ export const PolarisParser = {
         if (!data || data.length === 0) return [];
 
         const production = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         for (let i = config.headerRowIndex + 2; i < data.length; i++) {
             const row = data[i];
             if (!row) continue;
             const dateStr = this.parseDate(row[config.dateCol]);
             if (!dateStr) continue;
+
+            // Skip future dates
+            const prodDate = new Date(dateStr);
+            if (prodDate > today) continue;
 
             const oil = this.parseNumber(row[config.oilProdCol]);
             const water = this.parseNumber(row[config.waterProdCol]);
@@ -133,13 +146,23 @@ export const PolarisParser = {
     parseRunTicketsSheet(sheet) {
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
         const tickets = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         for (let i = 3; i < data.length; i++) {
             const row = data[i];
             if (!row || !row[1]) continue;
 
+            const dateStr = this.parseDate(row[0]);
+            
+            // Skip future dates
+            if (dateStr) {
+                const ticketDate = new Date(dateStr);
+                if (ticketDate > today) continue;
+            }
+
             tickets.push({
-                date: this.parseDate(row[0]),
+                date: dateStr,
                 ticketNum: String(row[1] || ''),
                 tank: this.parseNumber(row[2]),
                 ftTop: this.parseNumber(row[3]),
