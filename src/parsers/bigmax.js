@@ -20,8 +20,7 @@ export const BigMaxParser = {
         { id: 'bigmax-12-2', name: 'Big Max 12 #2', oilCol: 37, waterCol: 38, gasCol: 39, status: 'active' },
         { id: 'bigmax-13-3', name: 'Big Max 13 #3', oilCol: 43, waterCol: 44, gasCol: 45, status: 'active' },
         { id: 'bigmax-13-5', name: 'Big Max 13 #5', oilCol: 49, waterCol: 50, gasCol: 51, status: 'active' },
-        { id: 'bigmax-14-4', name: 'Big Max 14 #4', oilCol: 55, waterCol: 56, gasCol: 57, status: 'active' },
-        { id: 'bigmax-swd', name: 'Big Max 12-101 SWD', oilCol: 61, waterCol: 62, gasCol: 63, status: 'active', wellType: 'swd' }  // SWD well
+        { id: 'bigmax-14-4', name: 'Big Max 14 #4', oilCol: 55, waterCol: 56, gasCol: 57, status: 'active' }
     ],
 
     parse(workbook) {
@@ -78,13 +77,6 @@ export const BigMaxParser = {
                 let water = this.parseNumber(row[wellDef.waterCol]);
                 let gas = this.parseNumber(row[wellDef.gasCol]);
 
-                // Big Max 12-101 SWD has no oil/gas - the "oil" column is actually water
-                if (wellDef.id === 'bigmax-swd') {
-                    water = oil;  // What we thought was oil is actually water
-                    oil = 0;      // No oil production for SWD well
-                    gas = 0;      // No gas production for SWD well
-                }
-
                 if (oil !== null || water !== null || gas !== null) {
                     wells[idx].wellTests.push({ date: dateStr, oil, water, gas });
                     wells[idx].production.push({ date: new Date(dateStr), oil, water, gas });
@@ -127,7 +119,12 @@ export const BigMaxParser = {
 
     parseDate(val) {
         if (!val) return null;
-        if (val instanceof Date) return val.toISOString().split('T')[0];
+        if (val instanceof Date) {
+            const year = val.getFullYear();
+            const month = String(val.getMonth() + 1).padStart(2, '0');
+            const day = String(val.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
         if (typeof val === 'number') {
             const date = XLSX.SSF.parse_date_code(val);
             if (date) return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;

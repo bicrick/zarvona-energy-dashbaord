@@ -816,40 +816,166 @@ export async function updateWellInFirestore(sheetId, wellId, updates) {
 }
 
 /**
- * Clear all data from Firestore (for cache clearing)
+ * Clear only extracted data from Firestore (preserve manual edits)
+ * @param {Function} progressCallback - Optional callback to report progress (message)
  */
-export async function clearFirestoreData() {
+export async function clearExtractedDataOnly(progressCallback = null) {
     try {
-        console.log('Clearing Firestore data...');
+        const logProgress = (message) => {
+            console.log(message);
+            if (progressCallback) progressCallback(message);
+        };
+        
+        logProgress('Starting to clear extracted data...');
         
         const gaugeSheetsColl = collection(db, 'gaugeSheets');
         const gaugeSheetSnapshot = await getDocs(gaugeSheetsColl);
         
-        // Delete each gauge sheet and its subcollections
-        for (const sheetDoc of gaugeSheetSnapshot.docs) {
-            await deleteSheetFromFirestore(sheetDoc.id);
+        const totalSheets = gaugeSheetSnapshot.docs.length;
+        logProgress(`Found ${totalSheets} gauge sheets`);
+        
+        // Process each gauge sheet
+        for (let i = 0; i < totalSheets; i++) {
+            const sheetDoc = gaugeSheetSnapshot.docs[i];
+            const sheetId = sheetDoc.id;
+            const sheetData = sheetDoc.data();
+            logProgress(`Processing ${i + 1}/${totalSheets}: ${sheetData.name || sheetId}`);
+            
+            // Delete wells' production and test data, but preserve manual fields
+            const wellsColl = collection(db, `gaugeSheets/${sheetId}/wells`);
+            const wellsSnapshot = await getDocs(wellsColl);
+            const totalWells = wellsSnapshot.docs.length;
+            
+            logProgress(`Clearing production data for ${totalWells} wells...`);
+            
+            for (const wellDoc of wellsSnapshot.docs) {
+                const wellId = wellDoc.id;
+                
+                // Delete production subcollection
+                const productionColl = collection(db, `gaugeSheets/${sheetId}/wells/${wellId}/production`);
+                const productionSnapshot = await getDocs(productionColl);
+                for (const prodDoc of productionSnapshot.docs) {
+                    await deleteDoc(prodDoc.ref);
+                }
+                
+                // Delete well tests subcollection
+                const wellTestsColl = collection(db, `gaugeSheets/${sheetId}/wells/${wellId}/wellTests`);
+                const wellTestsSnapshot = await getDocs(wellTestsColl);
+                for (const testDoc of wellTestsSnapshot.docs) {
+                    await deleteDoc(testDoc.ref);
+                }
+                
+                // Update well document to clear computed fields, but preserve manual fields
+                const wellRef = doc(db, `gaugeSheets/${sheetId}/wells`, wellId);
+                await setDoc(wellRef, {
+                    latestProduction: null,
+                    latestTest: null,
+                    dailyStats: null,
+                    hasActionItems: wellDoc.data().hasActionItems || false
+                    // Keep: actionItems, chemicalProgram, failureHistory, pressureReadings
+                }, { merge: true });
+            }
+            
+            logProgress(`Clearing battery production and run tickets...`);
+            
+            // Delete battery production
+            const batteryProdColl = collection(db, `gaugeSheets/${sheetId}/batteryProduction`);
+            const batteryProdSnapshot = await getDocs(batteryProdColl);
+            for (const prodDoc of batteryProdSnapshot.docs) {
+                await deleteDoc(prodDoc.ref);
+            }
+            
+            // Delete run tickets
+            const runTicketsColl = collection(db, `gaugeSheets/${sheetId}/runTickets`);
+            const runTicketsSnapshot = await getDocs(runTicketsColl);
+            for (const ticketDoc of runTicketsSnapshot.docs) {
+                await deleteDoc(ticketDoc.ref);
+            }
+            
+            // Update sheet document to clear extracted data metadata
+            const sheetRef = doc(db, 'gaugeSheets', sheetId);
+            await setDoc(sheetRef, {
+                lastUpdated: Timestamp.now(),
+                rawRowCount: 0,
+                wellList: [],
+                wellCount: 0
+            }, { merge: true });
         }
+        
+        logProgress('Clearing local state...');
         
         // Clear local state
         appState.appData = {};
         appState.dashboardData = null;
         
-        console.log('Firestore data cleared successfully');
+        logProgress('Extracted data cleared successfully! Manual edits preserved.');
+        return true;
+    } catch (error) {
+        console.error('Error clearing extracted data:', error);
+        if (progressCallback) progressCallback(`Error: ${error.message}`);
+        return false;
+    }
+}
+
+/**
+ * Clear all data from Firestore (for complete database clearing)
+ * @param {Function} progressCallback - Optional callback to report progress (message)
+ */
+export async function clearFirestoreData(progressCallback = null) {
+    try {
+        const logProgress = (message) => {
+            console.log(message);
+            if (progressCallback) progressCallback(message);
+        };
+        
+        logProgress('Starting to clear all data...');
+        
+        const gaugeSheetsColl = collection(db, 'gaugeSheets');
+        const gaugeSheetSnapshot = await getDocs(gaugeSheetsColl);
+        
+        const totalSheets = gaugeSheetSnapshot.docs.length;
+        logProgress(`Found ${totalSheets} gauge sheets to delete`);
+        
+        // Delete each gauge sheet and its subcollections
+        for (let i = 0; i < totalSheets; i++) {
+            const sheetDoc = gaugeSheetSnapshot.docs[i];
+            const sheetData = sheetDoc.data();
+            logProgress(`Deleting ${i + 1}/${totalSheets}: ${sheetData.name || sheetDoc.id}`);
+            await deleteSheetFromFirestore(sheetDoc.id, logProgress);
+        }
+        
+        logProgress('Clearing local state...');
+        
+        // Clear local state
+        appState.appData = {};
+        appState.dashboardData = null;
+        
+        logProgress('All data cleared successfully!');
         return true;
     } catch (error) {
         console.error('Error clearing Firestore data:', error);
+        if (progressCallback) progressCallback(`Error: ${error.message}`);
         return false;
     }
 }
 
 /**
  * Delete a sheet and all its subcollections from Firestore
+ * @param {string} sheetId - The sheet ID to delete
+ * @param {Function} progressCallback - Optional callback to report progress
  */
-async function deleteSheetFromFirestore(sheetId) {
+async function deleteSheetFromFirestore(sheetId, progressCallback = null) {
     try {
+        const logProgress = (message) => {
+            if (progressCallback) progressCallback(message);
+        };
+        
         // Delete wells and their subcollections
         const wellsColl = collection(db, `gaugeSheets/${sheetId}/wells`);
         const wellsSnapshot = await getDocs(wellsColl);
+        const totalWells = wellsSnapshot.docs.length;
+        
+        logProgress(`Deleting ${totalWells} wells and their data...`);
         
         for (const wellDoc of wellsSnapshot.docs) {
             // Delete production subcollection
@@ -869,6 +995,8 @@ async function deleteSheetFromFirestore(sheetId) {
             // Delete well document
             await deleteDoc(wellDoc.ref);
         }
+        
+        logProgress(`Deleting battery production and run tickets...`);
         
         // Delete battery production
         const batteryProdColl = collection(db, `gaugeSheets/${sheetId}/batteryProduction`);

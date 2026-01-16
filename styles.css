@@ -2888,6 +2888,173 @@ tbody tr:nth-child(even) {
 }
 
 /* ============================================================================
+   Clear Database Modal Styles
+   ============================================================================ */
+
+.clear-database-modal {
+    max-width: 800px;
+}
+
+.modal-description {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.clear-options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.clear-option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.clear-option-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--text-muted);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.clear-option-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.clear-icon-danger {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+}
+
+.clear-option-btn:hover .clear-icon-danger {
+    background: rgba(220, 38, 38, 0.15);
+}
+
+.clear-icon-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.clear-option-btn:hover .clear-icon-warning {
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.clear-option-content {
+    flex: 1;
+}
+
+.clear-option-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.clear-option-content p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Clear Progress View */
+.clear-progress-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.clear-progress-spinner {
+    margin-bottom: 24px;
+}
+
+.clear-progress-container h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+}
+
+.clear-progress-status {
+    margin-bottom: 24px;
+}
+
+.clear-progress-status p {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.clear-progress-steps {
+    width: 100%;
+    max-width: 500px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.clear-progress-steps::-webkit-scrollbar {
+    width: 6px;
+}
+
+.clear-progress-steps::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.clear-progress-steps::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.progress-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+.progress-step:last-child {
+    border-bottom: none;
+}
+
+.progress-step svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--accent);
+}
+
+.progress-step span {
+    flex: 1;
+}
+
+/* ============================================================================
    Edit Form Styles
    ============================================================================ */
 

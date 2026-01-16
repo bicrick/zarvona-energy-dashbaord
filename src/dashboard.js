@@ -2,7 +2,7 @@ import { appState } from './config.js';
 import { formatDate } from './utils.js';
 import { getAggregateStats, getTopProducingWells, getRecentWellTests, getAllActionItems } from './data-aggregation.js';
 import { showWellView } from './views.js';
-import { clearFirestoreData } from './firestore-storage.js';
+import { clearFirestoreData, clearExtractedDataOnly } from './firestore-storage.js';
 
 const LOADING_PLACEHOLDER = '<div class="loading-placeholder"><div class="loading-spinner-small"></div><span>Loading...</span></div>';
 
@@ -153,6 +153,13 @@ export function initializeDashboardHandlers() {
     const reuploadModal = document.getElementById('reuploadModal');
     const btnCloseReuploadModal = document.getElementById('btnCloseReuploadModal');
     const reuploadModalOverlay = document.getElementById('reuploadModalOverlay');
+    
+    // Clear Database Modal elements
+    const clearDatabaseModal = document.getElementById('clearDatabaseModal');
+    const btnCloseClearDatabaseModal = document.getElementById('btnCloseClearDatabaseModal');
+    const clearDatabaseModalOverlay = document.getElementById('clearDatabaseModalOverlay');
+    const btnClearAllData = document.getElementById('btnClearAllData');
+    const btnClearExtractedOnly = document.getElementById('btnClearExtractedOnly');
 
     if (btnReuploadAll) {
         btnReuploadAll.addEventListener('click', () => {
@@ -178,18 +185,101 @@ export function initializeDashboardHandlers() {
         });
     }
 
+    // Clear Database button - show modal
     if (btnClearCache) {
-        btnClearCache.addEventListener('click', async () => {
-            if (confirm('Clear all data from the cloud? You will need to re-upload your gauge sheets.')) {
-                await clearCache();
+        btnClearCache.addEventListener('click', () => {
+            if (clearDatabaseModal) {
+                clearDatabaseModal.classList.add('visible');
+            }
+        });
+    }
+    
+    // Clear Database Modal - Close handlers
+    if (btnCloseClearDatabaseModal) {
+        btnCloseClearDatabaseModal.addEventListener('click', () => {
+            if (clearDatabaseModal) {
+                clearDatabaseModal.classList.remove('visible');
+            }
+        });
+    }
+    
+    if (clearDatabaseModalOverlay) {
+        clearDatabaseModalOverlay.addEventListener('click', () => {
+            if (clearDatabaseModal) {
+                clearDatabaseModal.classList.remove('visible');
+            }
+        });
+    }
+    
+    // Clear All Data option
+    if (btnClearAllData) {
+        btnClearAllData.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to clear ALL data? This will delete everything including your manual edits. You will need to re-upload all gauge sheets.')) {
+                showClearProgress('Clearing All Data');
+                await clearAllData();
+            }
+        });
+    }
+    
+    // Clear Extracted Data Only option
+    if (btnClearExtractedOnly) {
+        btnClearExtractedOnly.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to clear extracted data? This will delete production data from uploaded sheets but keep your manual edits (action items, chemical programs, etc.). You will need to re-upload gauge sheets.')) {
+                showClearProgress('Clearing Extracted Data');
+                await clearExtractedData();
             }
         });
     }
 }
 
-async function clearCache() {
-    // Clear data from Firestore
-    await clearFirestoreData();
+function showClearProgress(title) {
+    const optionsView = document.getElementById('clearOptionsView');
+    const progressView = document.getElementById('clearProgressView');
+    const progressTitle = document.getElementById('clearProgressTitle');
+    const progressSteps = document.getElementById('clearProgressSteps');
+    
+    if (optionsView) optionsView.style.display = 'none';
+    if (progressView) progressView.style.display = 'block';
+    if (progressTitle) progressTitle.textContent = title;
+    if (progressSteps) progressSteps.innerHTML = '';
+}
+
+function updateClearProgress(message) {
+    const progressMessage = document.getElementById('clearProgressMessage');
+    const progressSteps = document.getElementById('clearProgressSteps');
+    
+    if (progressMessage) {
+        progressMessage.textContent = message;
+    }
+    
+    if (progressSteps) {
+        const step = document.createElement('div');
+        step.className = 'progress-step';
+        step.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>${message}</span>
+        `;
+        progressSteps.appendChild(step);
+        
+        // Auto-scroll to bottom
+        progressSteps.scrollTop = progressSteps.scrollHeight;
+    }
+}
+
+async function clearAllData() {
+    // Clear ALL data from Firestore with progress updates
+    await clearFirestoreData(updateClearProgress);
+    
+    if (onCacheCleared) {
+        onCacheCleared();
+    }
+}
+
+async function clearExtractedData() {
+    // Clear only extracted data from Firestore (preserve manual edits) with progress updates
+    await clearExtractedDataOnly(updateClearProgress);
     
     if (onCacheCleared) {
         onCacheCleared();
