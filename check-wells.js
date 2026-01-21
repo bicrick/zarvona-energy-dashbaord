@@ -7,7 +7,7 @@ const firebaseConfigPath = './src/firebase.js';
 const configContent = readFileSync(firebaseConfigPath, 'utf-8');
 
 // Extract config
-const configMatch = configContent.match(/export const firebaseConfig = ({[\s\S]*?});/);
+const configMatch = configContent.match(/const firebaseConfig = ({[\s\S]*?});/);
 if (!configMatch) {
   console.error('Could not find firebase config');
   process.exit(1);

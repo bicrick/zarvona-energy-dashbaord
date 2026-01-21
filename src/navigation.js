@@ -166,10 +166,13 @@ function createWellsSection() {
     const children = document.createElement('div');
     children.className = 'nav-section-children visible';
 
-    GAUGE_SHEETS.forEach(sheet => {
-        const sheetEl = createGaugeSheetNavItem(sheet);
-        children.appendChild(sheetEl);
-    });
+    // Filter out special sheets (chemical, fluid level) - they have their own section
+    GAUGE_SHEETS
+        .filter(sheet => !sheet.isChemicalSheet && !sheet.isFluidLevelSheet)
+        .forEach(sheet => {
+            const sheetEl = createGaugeSheetNavItem(sheet);
+            children.appendChild(sheetEl);
+        });
 
     header.addEventListener('click', () => {
         header.classList.toggle('expanded');

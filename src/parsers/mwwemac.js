@@ -1,7 +1,7 @@
 /**
  * MW-Wemac-Sabrina-Berkley Gauge Sheet Parser
  * Expected file: Mw-Wemac-Sabrina-Berkley.xlsx
- * Wells: Berkley #1, #4, #5, #6, Sabrina #5
+ * Wells: Berkley #1, #4, #5, #6, Sabrina #5, Miles #1, Wemac #6, M&W #1R, Jane #2
  */
 
 export const MWWemacParser = {
@@ -17,9 +17,10 @@ export const MWWemacParser = {
         { id: 'berkley-5', name: 'Berkley #5', oilCol: 13, waterCol: 14, gasCol: 15, status: 'active' },
         { id: 'berkley-6', name: 'Berkley #6', oilCol: 19, waterCol: 20, gasCol: 21, status: 'active' },
         { id: 'sabrina-5', name: 'Sabrina #5', oilCol: 25, waterCol: 26, gasCol: 27, status: 'inactive' },  // Inactive per user
-        { id: 'sabrina-7', name: 'Sabrina #7', oilCol: 31, waterCol: 32, gasCol: 33, status: 'inactive' },  // Inactive per user
-        { id: 'sabrina-3', name: 'Sabrina #3', oilCol: 37, waterCol: 38, gasCol: 39, status: 'inactive' },  // Inactive per user
-        { id: 'sabrina-12', name: 'Sabrina #12', oilCol: 43, waterCol: 44, gasCol: 45, status: 'inactive' }  // Inactive per user
+        { id: 'miles-1', name: 'Miles #1', oilCol: 31, waterCol: 32, gasCol: null, status: 'active' },
+        { id: 'wemac-6', name: 'Wemac #6', oilCol: 35, waterCol: 36, gasCol: null, status: 'active' },
+        { id: 'mandw-1r', name: 'M&W #1R', oilCol: 39, waterCol: 40, gasCol: null, status: 'active' },
+        { id: 'jane-2', name: 'Jane #2', oilCol: 43, waterCol: 44, gasCol: null, status: 'active' }
     ],
     productionConfig: {
         sheet: 'Berkley',
