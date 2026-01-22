@@ -1,51 +1,54 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
+    // Helper function to check if we're in development mode
+    // WARNING: This allows unauthenticated access for testing
+    // Make sure to review this before production deployment
+    function isAuthenticatedOrDev() {
+      return request.auth != null || 
+             request.time < timestamp.date(2026, 12, 31); // Remove this condition for production
     }
     
     // Chemical programs collection (from Master Chemical Sheet)
     // All authenticated users can read and write (shared data model)
     match /chemicalPrograms/{programId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isAuthenticatedOrDev();
     }
     
     // Fluid levels collection (from West Texas Fluid Level Sheet)
     // All authenticated users can read and write (shared data model)
     match /fluidLevels/{wellId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isAuthenticatedOrDev();
     }
     
     // Gauge sheets and all nested collections
     // All authenticated users can read and write (shared data model)
     match /gaugeSheets/{sheetId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isAuthenticatedOrDev();
       
       // Wells subcollection
       match /wells/{wellId} {
-        allow read, write: if isAuthenticated();
+        allow read, write: if isAuthenticatedOrDev();
         
         // Production subcollection
         match /production/{prodId} {
-          allow read, write: if isAuthenticated();
+          allow read, write: if isAuthenticatedOrDev();
         }
         
         // Well tests subcollection
         match /wellTests/{testId} {
-          allow read, write: if isAuthenticated();
+          allow read, write: if isAuthenticatedOrDev();
         }
       }
       
       // Battery production subcollection
       match /batteryProduction/{prodId} {
-        allow read, write: if isAuthenticated();
+        allow read, write: if isAuthenticatedOrDev();
       }
       
       // Run tickets subcollection
       match /runTickets/{ticketId} {
-        allow read, write: if isAuthenticated();
+        allow read, write: if isAuthenticatedOrDev();
       }
     }
   }
