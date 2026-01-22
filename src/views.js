@@ -1833,7 +1833,7 @@ function renderFluidLevelsTable(searchTerm = '') {
                 <td class="change-cell ${changeClass}">${changeText}${changeIndicator}</td>
                 <td>${row.strokeLength || '-'}</td>
                 <td class="numeric-cell">${row.spm !== null ? row.spm.toFixed(1) : '-'}</td>
-                <td>${row.runTime || '-'}</td>
+                <td>${row.runTime !== null ? (row.runTime * 100).toFixed(0) + '%' : '-'}</td>
                 <td class="numeric-cell">${row.pumpIntakePressure !== null ? row.pumpIntakePressure.toFixed(0) : '-'}</td>
             </tr>
         `;
@@ -1918,7 +1918,7 @@ function exportFluidLevelsCSV() {
                 'change': change !== null ? change.toFixed(0) : '',
                 'strokelength': latest.strokeLength || '',
                 'spm': latest.spm !== null ? latest.spm.toFixed(1) : '',
-                'runtime': latest.runTime || '',
+                'runtime': latest.runTime !== null ? (latest.runTime * 100).toFixed(0) + '%' : '',
                 'pumpintakepressure': latest.pumpIntakePressure !== null ? latest.pumpIntakePressure.toFixed(0) : ''
             });
         }
