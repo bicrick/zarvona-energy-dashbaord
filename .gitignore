@@ -6,3 +6,6 @@ sheets/
 
 # Dependencies
 node_modules/
+
+# Vite
+node_modules/.vite/

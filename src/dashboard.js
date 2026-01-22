@@ -1,6 +1,6 @@
 import { appState } from './config.js';
 import { formatDate } from './utils.js';
-import { getAggregateStats, getTopProducingWells, getRecentWellTests, getAllActionItems } from './data-aggregation.js';
+import { getAggregateStats, getTopProducingWells, getAllActionItems } from './data-aggregation.js';
 import { showWellView } from './views.js';
 import { clearFirestoreData, clearExtractedDataOnly } from './firestore-storage.js';
 import { showOilChartView, showWaterChartView, showGasChartView } from './charts/aggregate.js';
@@ -17,7 +17,6 @@ export function setOnCacheCleared(handler) {
 export function renderDashboard() {
     renderDashboardStats();
     renderTopProducers();
-    renderRecentTests();
     renderDashboardActionItems();
 }
 
@@ -64,42 +63,6 @@ function renderTopProducers() {
             <td class="battery-name-cell">${well.batteryName}</td>
             <td>${well.oil > 0 ? well.oil : '-'}</td>
             <td>${well.water > 0 ? well.water : '-'}</td>
-        </tr>
-    `).join('');
-
-    tbody.querySelectorAll('tr[data-well-id]').forEach(row => {
-        row.addEventListener('click', () => {
-            const wellId = row.dataset.wellId;
-            const sheetId = row.dataset.sheetId;
-            showWellView(sheetId, wellId);
-        });
-    });
-}
-
-function renderRecentTests() {
-    const tbody = document.getElementById('recentTestsBody');
-    
-    // Show loading state if data is still loading
-    if (appState.isLoading) {
-        tbody.innerHTML = '<tr><td colspan="6" class="dashboard-loading">' + LOADING_PLACEHOLDER + '</td></tr>';
-        return;
-    }
-    
-    const recentTests = getRecentWellTests(10);
-
-    if (recentTests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="dashboard-empty">No test data available</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = recentTests.map(test => `
-        <tr data-well-id="${test.wellId}" data-sheet-id="${test.sheetId}">
-            <td>${formatDate(test.date)}</td>
-            <td class="well-name-cell">${test.wellName}</td>
-            <td class="battery-name-cell">${test.batteryName}</td>
-            <td>${test.oil !== null ? test.oil : '-'}</td>
-            <td>${test.water !== null ? test.water : '-'}</td>
-            <td>${test.gas !== null ? test.gas : '-'}</td>
         </tr>
     `).join('');
 

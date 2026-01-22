@@ -288,57 +288,69 @@ export function getTopProducingWells(limit = 10) {
     return allWells.sort((a, b) => b.oil - a.oil).slice(0, limit);
 }
 
-// Recent well tests
+// Recent well tests - shows most recent tests across ALL wells
 export function getRecentWellTests(limit = 10) {
-    if (appState.dashboardData?.recentTests) {
-        return appState.dashboardData.recentTests.slice(0, limit).map(well => {
-            const sheetConfig = GAUGE_SHEETS.find(s => s.id === well.sheetId);
-            const testDate = well.latestTest?.date
-                ? (well.latestTest.date.toDate?.() || new Date(well.latestTest.date))
-                : new Date();
-            
-            return {
-                date: testDate,
-                wellId: well.id,
-                wellName: well.name,
-                sheetId: well.sheetId,
-                batteryName: sheetConfig?.name || 'Unknown',
-                oil: well.latestTest ? roundValue(well.latestTest.oil) : null,
-                water: well.latestTest ? roundValue(well.latestTest.water) : null,
-                gas: well.latestTest ? roundValue(Math.max(0, well.latestTest.gas)) : null
-            };
-        });
-    }
-
-    // Fallback
-    const allTests = [];
     const today = getTodayEnd();
+    const allTests = [];
 
+    // Always iterate through all wells and collect ALL their well tests
+    // Then sort and take the most recent ones across the entire system
     Object.entries(appState.appData).forEach(([sheetId, sheet]) => {
         const sheetConfig = GAUGE_SHEETS.find(s => s.id === sheetId);
         if (!sheet?.wells || !sheetConfig) return;
 
         sheet.wells.forEach(well => {
-            if (well.status === 'inactive' || !well.wellTests) return;
+            if (well.status === 'inactive') return;
+            
+            // Check if well has wellTests array (detailed data loaded)
+            if (well.wellTests && well.wellTests.length > 0) {
+                well.wellTests.forEach(test => {
+                    if (!test.date) return;
+                    
+                    const testDate = new Date(test.date);
+                    if (isNaN(testDate.getTime()) || testDate > today) return;
 
-            well.wellTests.forEach(test => {
-                const testDate = new Date(test.date);
-                if (!test.date || testDate > today) return;
-
-                allTests.push({
-                    date: testDate,
-                    wellId: well.id,
-                    wellName: well.name,
-                    sheetId,
-                    batteryName: sheetConfig.name,
-                    oil: isValidValue(test.oil) ? roundValue(test.oil) : null,
-                    water: isValidValue(test.water) ? roundValue(test.water) : null,
-                    gas: isValidValue(test.gas) ? roundValue(Math.max(0, test.gas)) : null
+                    allTests.push({
+                        date: testDate,
+                        wellId: well.id,
+                        wellName: well.name,
+                        sheetId,
+                        batteryName: sheetConfig.name,
+                        oil: isValidValue(test.oil) ? roundValue(test.oil) : null,
+                        water: isValidValue(test.water) ? roundValue(test.water) : null,
+                        gas: isValidValue(test.gas) ? roundValue(Math.max(0, test.gas)) : null
+                    });
                 });
-            });
+            } else if (well.latestTest) {
+                // Fallback to latestTest if wellTests not loaded yet
+                let testDate = null;
+                if (well.latestTest.date) {
+                    if (well.latestTest.date.toDate) {
+                        testDate = well.latestTest.date.toDate();
+                    } else if (well.latestTest.date instanceof Date) {
+                        testDate = well.latestTest.date;
+                    } else {
+                        testDate = new Date(well.latestTest.date);
+                    }
+                }
+                
+                if (testDate && !isNaN(testDate.getTime()) && testDate <= today) {
+                    allTests.push({
+                        date: testDate,
+                        wellId: well.id,
+                        wellName: well.name,
+                        sheetId,
+                        batteryName: sheetConfig.name,
+                        oil: isValidValue(well.latestTest.oil) ? roundValue(well.latestTest.oil) : null,
+                        water: isValidValue(well.latestTest.water) ? roundValue(well.latestTest.water) : null,
+                        gas: isValidValue(well.latestTest.gas) ? roundValue(Math.max(0, well.latestTest.gas)) : null
+                    });
+                }
+            }
         });
     });
 
+    // Sort by date descending and return top N most recent tests
     return allTests.sort((a, b) => b.date - a.date).slice(0, limit);
 }
 
