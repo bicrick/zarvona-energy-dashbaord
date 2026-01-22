@@ -241,8 +241,14 @@ function renderMasterChemicalTable() {
     });
     tableHeader.innerHTML = headerHTML;
     
+    // Track currently filtered programs for CSV export
+    let currentFilteredPrograms = programsArray;
+    
     // Build table rows
     const renderRows = (programs) => {
+        // Update the current filtered programs reference
+        currentFilteredPrograms = programs;
+        
         if (programs.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="100" style="text-align: center; color: #6b7280;">No matching wells</td></tr>';
             return;
@@ -346,7 +352,8 @@ function renderMasterChemicalTable() {
         exportBtn.parentNode.replaceChild(newExportBtn, exportBtn);
         
         newExportBtn.addEventListener('click', () => {
-            const csvData = programsArray.map(program => {
+            // Use currentFilteredPrograms instead of programsArray to respect active filters
+            const csvData = currentFilteredPrograms.map(program => {
                 // No test data columns in new format
                 const row = {
                     'wellname': program.wellName || '',
