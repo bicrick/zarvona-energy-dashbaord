@@ -517,6 +517,29 @@
                         </div>
                         <ul class="action-list completed-action-list" id="completedActionList"></ul>
                     </section>
+
+                    <!-- Fluid Levels (full width if data available) -->
+                    <section class="card fluid-levels-well-card" id="fluidLevelsWellCard" style="display: none;">
+                        <h3>Fluid Levels</h3>
+                        <div class="table-container">
+                            <table id="fluidLevelsWellTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Gas Free Level (ft)</th>
+                                        <th>Delta (ft)</th>
+                                        <th>Stroke</th>
+                                        <th>SPM</th>
+                                        <th>Run Time (%)</th>
+                                        <th>Pump Intake (psi)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fluidLevelsWellBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- Edit Modal -->

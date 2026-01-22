@@ -900,6 +900,7 @@ export async function showWellView(sheetId, wellId) {
     renderCompletedActions(well.completedActions || []);
     renderPressureTable(well.pressureReadings || []);
     renderPressureCharts(well.pressureReadings || []);
+    renderFluidLevels(well.name);
 
     initializeEditHandlers();
     initializeCSVDownloadHandlers(well);
@@ -1755,6 +1756,63 @@ function renderPressureCharts(readings) {
             }
         });
     }
+}
+
+function renderFluidLevels(wellName) {
+    const card = document.getElementById('fluidLevelsWellCard');
+    const tbody = document.querySelector('#fluidLevelsWellTable tbody');
+    
+    // Normalize well name to match fluid level data
+    const normalized = wellName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const fluidData = appState.fluidLevels[normalized];
+    
+    // Hide card if no data available
+    if (!fluidData || !fluidData.readings || fluidData.readings.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+    
+    // Show card and populate table
+    card.style.display = 'block';
+    
+    // Sort readings by date descending (newest first)
+    const sortedReadings = [...fluidData.readings].sort((a, b) => 
+        new Date(b.date) - new Date(a.date)
+    );
+    
+    // Calculate delta (change from previous reading)
+    tbody.innerHTML = sortedReadings.map((reading, index) => {
+        const nextReading = sortedReadings[index + 1];
+        let delta = null;
+        
+        if (nextReading && reading.gasFreeLevel !== null && nextReading.gasFreeLevel !== null) {
+            delta = reading.gasFreeLevel - nextReading.gasFreeLevel;
+        }
+        
+        const deltaText = delta !== null 
+            ? `${delta > 0 ? '+' : ''}${delta.toFixed(0)}`
+            : '-';
+        
+        const deltaClass = delta !== null && delta > 0 ? 'change-rising' 
+                          : delta !== null && delta < 0 ? 'change-falling' 
+                          : '';
+        
+        const runTimePercent = reading.runTime !== null 
+            ? (reading.runTime * 100).toFixed(0) + '%'
+            : '-';
+        
+        return `
+            <tr>
+                <td>${formatDate(reading.date)}</td>
+                <td class="numeric-cell">${reading.gasFreeLevel !== null ? reading.gasFreeLevel.toFixed(0) : '-'}</td>
+                <td class="change-cell ${deltaClass}">${deltaText}</td>
+                <td>${reading.strokeLength || '-'}</td>
+                <td class="numeric-cell">${reading.spm !== null ? reading.spm.toFixed(1) : '-'}</td>
+                <td>${runTimePercent}</td>
+                <td class="numeric-cell">${reading.pumpIntakePressure !== null ? reading.pumpIntakePressure.toFixed(0) : '-'}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // ============================================================================
