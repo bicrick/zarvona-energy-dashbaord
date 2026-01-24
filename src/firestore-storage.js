@@ -448,6 +448,7 @@ export async function loadNavigationData(progressCallback = null) {
                     failureHistory: wellData.failureHistory || [],
                     actionItems: wellData.actionItems || [],
                     completedActions: wellData.completedActions || [],
+                    pumpEfficiency: wellData.pumpEfficiency || null,
                     production: [],  // Will lazy-load when viewing well
                     wellTests: [],   // Will lazy-load when viewing well
                     _detailsLoaded: false
@@ -632,6 +633,7 @@ export async function loadWellDetails(sheetId, wellId) {
                 failureHistory: wellData.failureHistory || [],
                 actionItems: wellData.actionItems || [],
                 completedActions: wellData.completedActions || [],
+                pumpEfficiency: wellData.pumpEfficiency || null,
                 _detailsLoaded: false
             };
             sheetData.wells.push(well);
@@ -669,6 +671,7 @@ export async function loadWellDetails(sheetId, wellId) {
             well.failureHistory = wellData.failureHistory || [];
             well.actionItems = wellData.actionItems || [];
             well.completedActions = wellData.completedActions || [];
+            well.pumpEfficiency = wellData.pumpEfficiency || null;
             well.status = wellData.status || 'active';
         }
         

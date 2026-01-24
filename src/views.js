@@ -894,6 +894,7 @@ export async function showWellView(sheetId, wellId) {
     // Render all well data
     renderProductionCharts(well);
     renderWellTestTable(well.wellTests || []);
+    renderPumpEfficiency(well.pumpEfficiency || null);
     renderChemicalProgram(well.chemicalProgram || {}, matchedChemicalProgram, well.name);
     renderFailureHistory(well.failureHistory || []);
     renderActionList('wellActionList', well.actionItems || []);
@@ -1119,6 +1120,39 @@ function renderWellTestTable(wellTests) {
             </tr>
         `;
     }).join('');
+}
+
+function renderPumpEfficiency(pumpEfficiency) {
+    if (!pumpEfficiency) {
+        // Hide the entire card if no data
+        const card = document.querySelector('#pumpEfficiencyTable').closest('.card');
+        if (card) {
+            card.style.display = 'none';
+        }
+        return;
+    }
+
+    // Show the card
+    const card = document.querySelector('#pumpEfficiencyTable').closest('.card');
+    if (card) {
+        card.style.display = 'block';
+    }
+
+    // Populate the table
+    document.getElementById('pumpStrokeLength').textContent = 
+        pumpEfficiency.strokeLength ? `${pumpEfficiency.strokeLength} in` : '-';
+    
+    document.getElementById('pumpSPM').textContent = 
+        pumpEfficiency.spm ? `${pumpEfficiency.spm} strokes/min` : '-';
+    
+    document.getElementById('pumpRunTime').textContent = 
+        pumpEfficiency.runTime ? `${Math.round(pumpEfficiency.runTime * 100)}%` : '-';
+    
+    document.getElementById('pumpSize').textContent = 
+        pumpEfficiency.pumpSize ? `${pumpEfficiency.pumpSize} in` : '-';
+    
+    document.getElementById('pumpTheoretical').textContent = 
+        pumpEfficiency.theoreticalBFPD ? `${pumpEfficiency.theoreticalBFPD} bbl/day` : '-';
 }
 
 function renderChemicalProgram(manualProgram, matchedProgram, wellName) {

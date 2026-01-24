@@ -68,7 +68,8 @@ export const ShusaParser = {
         { id: 'shusa-15-13', name: 'Shusa 15 #13', oilCol: 92, waterCol: 93, gasCol: null },
         { id: 'shusa-15-14', name: 'Shusa 15 #14', oilCol: 96, waterCol: 97, gasCol: null },
         { id: 'shusa-15-15', name: 'Shusa 15 #15', oilCol: 100, waterCol: 101, gasCol: null },
-        { id: 'shusa-15-16', name: 'Shusa 15 #16', oilCol: 104, waterCol: 105, gasCol: null }
+        { id: 'shusa-15-16', name: 'Shusa 15 #16', oilCol: 104, waterCol: 105, gasCol: null },
+        { id: 'shusa-15-17', name: 'Shusa 15 #17', oilCol: 108, waterCol: 109, gasCol: null }
     ],
 
     parse(workbook) {
