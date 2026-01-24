@@ -73,7 +73,8 @@ function openEditModal(section) {
         actionItems: 'Edit Action Items',
         pressureReadings: 'Edit Pressure Readings',
         wellTests: 'Edit Well Tests',
-        fluidLevels: 'Edit Fluid Levels'
+        fluidLevels: 'Edit Fluid Levels',
+        pumpEfficiency: 'Edit Pump Efficiency'
     };
     title.textContent = titles[section] || 'Edit';
 
@@ -100,6 +101,9 @@ function openEditModal(section) {
         case 'fluidLevels':
             body.innerHTML = renderFluidLevelsForm(well.name);
             initializeFluidLevelsHandlers();
+            break;
+        case 'pumpEfficiency':
+            body.innerHTML = renderPumpEfficiencyForm(well.pumpEfficiency || {});
             break;
     }
 
@@ -605,6 +609,10 @@ async function saveEditedData() {
             well.pressureReadings = readPressureReadingsForm();
             updates.pressureReadings = well.pressureReadings;
             break;
+        case 'pumpEfficiency':
+            well.pumpEfficiency = readPumpEfficiencyForm();
+            updates.pumpEfficiency = well.pumpEfficiency;
+            break;
         case 'wellTests':
             // Well tests are handled differently - stored in subcollection
             const newWellTests = readWellTestForm();
@@ -793,6 +801,88 @@ function readPressureReadingsForm() {
         }
     });
 
+    return data;
+}
+
+function renderPumpEfficiencyForm(data) {
+    // Convert runTime from decimal to percentage for display
+    const runTimePercent = data.runTime !== null && data.runTime !== undefined
+        ? (data.runTime * 100).toFixed(0)
+        : '';
+    
+    return `
+        <div class="pump-efficiency-form">
+            <div class="form-row">
+                <label class="form-label">Stroke Length (inches)</label>
+                <input type="number" step="1" class="edit-form-input" 
+                       id="editStrokeLength" 
+                       value="${data.strokeLength || ''}" 
+                       placeholder="e.g., 77">
+            </div>
+            <div class="form-row">
+                <label class="form-label">SPM (strokes per minute)</label>
+                <input type="number" step="0.1" class="edit-form-input" 
+                       id="editSPM" 
+                       value="${data.spm || ''}" 
+                       placeholder="e.g., 6.9">
+            </div>
+            <div class="form-row">
+                <label class="form-label">Run Time (%)</label>
+                <input type="number" step="1" min="0" max="100" class="edit-form-input" 
+                       id="editRunTime" 
+                       value="${runTimePercent}" 
+                       placeholder="e.g., 40">
+            </div>
+            <div class="form-row">
+                <label class="form-label">Pump Size (inches)</label>
+                <input type="number" step="0.001" class="edit-form-input" 
+                       id="editPumpSize" 
+                       value="${data.pumpSize || ''}" 
+                       placeholder="e.g., 1.25">
+            </div>
+            <div class="form-row">
+                <label class="form-label">Theoretical BFPD (barrels/day)</label>
+                <input type="number" step="1" class="edit-form-input" 
+                       id="editTheoreticalBFPD" 
+                       value="${data.theoreticalBFPD || ''}" 
+                       placeholder="e.g., 39">
+            </div>
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+            Leave fields blank to remove values.
+        </p>
+    `;
+}
+
+function readPumpEfficiencyForm() {
+    const strokeLength = document.getElementById('editStrokeLength')?.value;
+    const spm = document.getElementById('editSPM')?.value;
+    const runTime = document.getElementById('editRunTime')?.value;
+    const pumpSize = document.getElementById('editPumpSize')?.value;
+    const theoreticalBFPD = document.getElementById('editTheoreticalBFPD')?.value;
+    
+    const data = {
+        lastUpdated: new Date()
+    };
+    
+    // Only include fields that have values
+    if (strokeLength !== '') {
+        data.strokeLength = Number(strokeLength);
+    }
+    if (spm !== '') {
+        data.spm = Number(spm);
+    }
+    if (runTime !== '') {
+        // Convert percentage to decimal for storage
+        data.runTime = Number(runTime) / 100;
+    }
+    if (pumpSize !== '') {
+        data.pumpSize = Number(pumpSize);
+    }
+    if (theoreticalBFPD !== '') {
+        data.theoreticalBFPD = Number(theoreticalBFPD);
+    }
+    
     return data;
 }
 
