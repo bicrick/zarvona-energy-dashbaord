@@ -367,9 +367,9 @@ export function getAllActionItems(limit = 15) {
         const sheetConfig = GAUGE_SHEETS.find(s => s.id === well.sheetId);
         
         well.actionItems.forEach(item => {
-            if (item?.trim()) {
+            if (typeof item === 'string' && item.trim()) {
                 allItems.push({
-                    content: item,
+                    content: item.trim(),
                     wellId: well.id,
                     wellName: well.name,
                     sheetId: well.sheetId,
