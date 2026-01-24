@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "zarvona-energy-a85ce",
+    "site": "zarvona-energy-dashboard",
     "public": "dist",
     "ignore": [
       "firebase.json",
