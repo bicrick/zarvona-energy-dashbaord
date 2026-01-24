@@ -1151,8 +1151,20 @@ function renderPumpEfficiency(pumpEfficiency) {
     document.getElementById('pumpSize').textContent = 
         pumpEfficiency.pumpSize ? `${pumpEfficiency.pumpSize} in` : '-';
     
-    document.getElementById('pumpTheoretical').textContent = 
-        pumpEfficiency.theoreticalBFPD ? `${pumpEfficiency.theoreticalBFPD} bbl/day` : '-';
+    // Calculate Theoretical BFPD using the formula: pump_size^2 * run_time * spm * stroke_length * 0.1165
+    const hasAllValues = pumpEfficiency.pumpSize && pumpEfficiency.runTime && pumpEfficiency.spm && pumpEfficiency.strokeLength;
+    if (hasAllValues) {
+        const theoreticalBFPD = Math.round(
+            Math.pow(pumpEfficiency.pumpSize, 2) * 
+            pumpEfficiency.runTime * 
+            pumpEfficiency.spm * 
+            pumpEfficiency.strokeLength * 
+            0.1165
+        );
+        document.getElementById('pumpTheoretical').textContent = `${theoreticalBFPD} bbl/day`;
+    } else {
+        document.getElementById('pumpTheoretical').textContent = '-';
+    }
 }
 
 function renderChemicalProgram(manualProgram, matchedProgram, wellName) {

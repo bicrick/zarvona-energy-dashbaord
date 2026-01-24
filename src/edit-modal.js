@@ -840,14 +840,11 @@ function renderPumpEfficiencyForm(data) {
                        value="${data.pumpSize || ''}" 
                        placeholder="e.g., 1.25">
             </div>
-            <div class="form-row">
-                <label class="form-label">Theoretical BFPD (barrels/day)</label>
-                <input type="number" step="1" class="edit-form-input" 
-                       id="editTheoreticalBFPD" 
-                       value="${data.theoreticalBFPD || ''}" 
-                       placeholder="e.g., 39">
-            </div>
         </div>
+        <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+            <strong>Note:</strong> Theoretical BFPD is calculated automatically using the formula:<br>
+            pump_size² × run_time × spm × stroke_length × 0.1165
+        </p>
         <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
             Leave fields blank to remove values.
         </p>
@@ -859,7 +856,6 @@ function readPumpEfficiencyForm() {
     const spm = document.getElementById('editSPM')?.value;
     const runTime = document.getElementById('editRunTime')?.value;
     const pumpSize = document.getElementById('editPumpSize')?.value;
-    const theoreticalBFPD = document.getElementById('editTheoreticalBFPD')?.value;
     
     const data = {
         lastUpdated: new Date()
@@ -879,9 +875,7 @@ function readPumpEfficiencyForm() {
     if (pumpSize !== '') {
         data.pumpSize = Number(pumpSize);
     }
-    if (theoreticalBFPD !== '') {
-        data.theoreticalBFPD = Number(theoreticalBFPD);
-    }
+    // Note: theoreticalBFPD is calculated dynamically in the view, not stored
     
     return data;
 }
