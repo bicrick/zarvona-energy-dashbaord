@@ -2656,6 +2656,192 @@ const ARIES_WELLS = [
     'SAWGRASS 5H'
 ];
 
+// Mapping from ARIES well names to database well names
+const ARIES_WELL_MAPPING = {
+    'POLARIS 1': { dbNames: ['Polaris #1'], sheetId: 'polaris' },
+    'LINK 3': { dbNames: ['Link #3'], sheetId: 'shusa' },
+    'LINK 2': { dbNames: ['Link #2'], sheetId: 'shusa' },
+    'LINK 4': { dbNames: ['Link #4'], sheetId: 'shusa' },
+    'LINK 5': { dbNames: ['Link #5'], sheetId: 'shusa' },
+    'LINK 6': { dbNames: ['Link #6'], sheetId: 'shusa' },
+    'ROSEBUD 20 1': { dbNames: ['Rosebud 20 #1'], sheetId: 'shusa' },
+    'ROSEBUD 20 3': { dbNames: ['Rosebud 20 #3'], sheetId: 'shusa' },
+    'ROSEBUD 20 4': { dbNames: ['Rosebud 20 #4'], sheetId: 'shusa' },
+    'SHUSA 14 LEASE': { 
+        dbNames: ['Shusa 14 #1', 'Shusa 14 #2', 'Shusa 14 #3', 'Shusa 14 #4', 'Shusa 14 #5', 
+                  'Shusa 14 #6', 'Shusa 14 #7', 'Shusa 14 #8', 'Shusa 14 #9', 'Shusa 14 #10', 'Shusa 14 #12'], 
+        sheetId: 'shusa', 
+        aggregate: true 
+    },
+    'SHUSA 15 LEASE': { 
+        dbNames: ['Shusa 15 #1', 'Shusa 15 #2', 'Shusa 15 #3', 'Shusa 15 #4', 'Shusa 15 #6', 
+                  'Shusa 15 #7', 'Shusa 15 #8', 'Shusa 15 #9', 'Shusa 15 #10', 'Shusa 15 #11', 
+                  'Shusa 15 #12', 'Shusa 15 #13', 'Shusa 15 #14', 'Shusa 15 #15', 'Shusa 15 #16', 'Shusa 15 #17'], 
+        sheetId: 'shusa', 
+        aggregate: true 
+    },
+    'SHUSA 20 LEASE': { 
+        dbNames: ['Shusa 20 #1', 'Shusa 20 #2', 'Shusa 20 #3', 'Shusa 20 #4', 'Shusa 20 #5'], 
+        sheetId: 'shusa', 
+        aggregate: true 
+    },
+    'BIG MAX 1 # 1': { dbNames: ['Big Max 1 #1'], sheetId: 'bigmax' },
+    'BIG MAX 11 # 1': { dbNames: ['Big Max 11 #1'], sheetId: 'bigmax' },
+    'BIG MAX 11 # 2': { dbNames: ['Big Max 11 #2'], sheetId: 'bigmax' },
+    'BIG MAX 1-1 UNIT 1H': { dbNames: ['Big Max 1-1H'], sheetId: 'bigmax1h' },
+    'BIG MAX 14 SE # 4': { dbNames: ['Big Max 14 #4'], sheetId: 'bigmax' },
+    'JANE 2': { dbNames: ['Jane #2'], sheetId: 'mwwemac' },
+    'MCCOLLUM - MILES 1': { dbNames: ['Miles #1'], sheetId: 'mwwemac' },
+    'UNIVERSITY 1-3 #1H': { dbNames: ['ULS 1-3-1H'], sheetId: 'uls35h' },
+    'UNIVERSITY 1-3 #3H': { dbNames: ['ULS 1-3-3H'], sheetId: 'uls35h' },
+    'UNIVERSITY 1-3 #5H': { dbNames: ['ULS 1-3-5H'], sheetId: 'uls35h' },
+    'UNIVERSITY 1-3 #7H': { dbNames: ['ULS 1-3-7H'], sheetId: 'uls35h' },
+    'UNIVERSITY 1-30 #6H': { dbNames: ['1-30-6H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-30 UNIT #1H': { dbNames: ['ULS 1-30-1H'], sheetId: 'unit130' },
+    'UNIVERSITY 1-30 UNIT 8H': { dbNames: ['1-30-8H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-31 #2H': { dbNames: ['1-31-2H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-36 #1H': { dbNames: ['1-36-1H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-36 #2H': { dbNames: ['1-36-2H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-36 #3H': { dbNames: ['1-36-3H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-36 #4H': { dbNames: ['1-36-4H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-36 #5H': { dbNames: ['1-36-5H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-36 #6H': { dbNames: ['1-36-6H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-37 #1H': { dbNames: ['1-37-1H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-37 #3H': { dbNames: ['1-37-3H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-37 #4H': { dbNames: ['1-37-4H'], sheetId: 'southandrews' },
+    'UNIVERSITY 1-37 #6H': { dbNames: ['1-37-6H'], sheetId: 'southandrews' },
+    'UNIVERSITY 30 COBRA 3012': { dbNames: ['Cobra 3012'], sheetId: 'southandrews' },
+    'UNIVERSITY 30 COBRA 5H': { dbNames: ['Cobra 5H'], sheetId: 'southandrews' },
+    'UNIVERSITY 7 BERKLEY 5': { dbNames: ['Berkley #5'], sheetId: 'mwwemac' },
+    'UNIVERSITY 7 BERKLEY 6': { dbNames: ['Berkley #6'], sheetId: 'mwwemac' },
+    'WEMAC SOUTH (WOLFCAMP) UNIT 7': { dbNames: ['Wemac #6'], sheetId: 'mwwemac' },
+    'COWDEN 601H': { dbNames: ['Cowden 601H'], sheetId: 'cowden' },
+    'COWDEN 602 H': { dbNames: ['Cowden 602H'], sheetId: 'cowden' },
+    'COWDEN ANGUS H': { dbNames: ['Angus 7-18-1H'], sheetId: 'cowden' },
+    'SAWGRASS 5H': { dbNames: ['Sawgrass 5H'], sheetId: 'southandrews' }
+};
+
+/**
+ * Fetch well test data for all ARIES wells from appState
+ * @returns {Array} Array of 46 objects with { oilTest, gasTest } values
+ */
+function getAriesWellTestData() {
+    const testData = [];
+    const missingData = [];
+    
+    for (let index = 0; index < ARIES_WELLS.length; index++) {
+        const ariesWellName = ARIES_WELLS[index];
+        const mapping = ARIES_WELL_MAPPING[ariesWellName];
+        
+        if (!mapping) {
+            missingData.push({ well: ariesWellName, reason: 'No mapping defined' });
+            testData.push({ oilTest: null, gasTest: null });
+            continue;
+        }
+        
+        const { dbNames, sheetId, aggregate } = mapping;
+        const sheetData = appState.appData[sheetId];
+        
+        if (!sheetData) {
+            missingData.push({ well: ariesWellName, reason: `Sheet '${sheetId}' not found in appData` });
+            testData.push({ oilTest: null, gasTest: null });
+            continue;
+        }
+        
+        if (!sheetData.wells) {
+            missingData.push({ well: ariesWellName, reason: `Sheet '${sheetId}' has no wells array` });
+            testData.push({ oilTest: null, gasTest: null });
+            continue;
+        }
+        
+        if (aggregate) {
+            let totalOil = 0;
+            let totalGas = 0;
+            let foundAny = false;
+            let notFoundWells = [];
+            let noTestWells = [];
+            
+            for (const dbName of dbNames) {
+                const well = sheetData.wells.find(w => w.name === dbName);
+                if (!well) {
+                    notFoundWells.push(dbName);
+                    continue;
+                }
+                if (!well.latestTest) {
+                    noTestWells.push(dbName);
+                    continue;
+                }
+                
+                const oil = well.latestTest.oil;
+                const gas = well.latestTest.gas;
+                
+                if (oil !== null && oil !== undefined && !isNaN(oil)) {
+                    totalOil += Number(oil);
+                    foundAny = true;
+                }
+                if (gas !== null && gas !== undefined && !isNaN(gas)) {
+                    totalGas += Number(gas);
+                    foundAny = true;
+                }
+            }
+            
+            if (!foundAny) {
+                const reasons = [];
+                if (notFoundWells.length > 0) reasons.push(`Wells not found: ${notFoundWells.join(', ')}`);
+                if (noTestWells.length > 0) reasons.push(`Wells with no latestTest: ${noTestWells.join(', ')}`);
+                missingData.push({ 
+                    well: ariesWellName, 
+                    reason: reasons.length > 0 ? reasons.join('; ') : 'No test data available'
+                });
+            }
+            
+            testData.push({
+                oilTest: foundAny ? Math.round(totalOil * 100) / 100 : null,
+                gasTest: foundAny ? Math.round(totalGas * 100) / 100 : null
+            });
+        } else {
+            const dbName = dbNames[0];
+            const well = sheetData.wells.find(w => w.name === dbName);
+            
+            if (!well) {
+                missingData.push({ 
+                    well: ariesWellName, 
+                    reason: `Well '${dbName}' not found in sheet '${sheetId}'. Available wells: ${sheetData.wells.map(w => w.name).join(', ')}`
+                });
+                testData.push({ oilTest: null, gasTest: null });
+                continue;
+            }
+            
+            if (!well.latestTest) {
+                missingData.push({ well: ariesWellName, reason: `Well '${dbName}' has no latestTest data` });
+                testData.push({ oilTest: null, gasTest: null });
+                continue;
+            }
+            
+            const oil = well.latestTest.oil;
+            const gas = well.latestTest.gas;
+            
+            testData.push({
+                oilTest: (oil !== null && oil !== undefined && !isNaN(oil)) 
+                    ? Math.round(Number(oil) * 100) / 100 
+                    : null,
+                gasTest: (gas !== null && gas !== undefined && !isNaN(gas)) 
+                    ? Math.round(Number(gas) * 100) / 100 
+                    : null
+            });
+        }
+    }
+    
+    if (missingData.length > 0) {
+        console.warn('ARIES wells with missing test data:');
+        missingData.forEach(item => {
+            console.warn(`  - ${item.well}: ${item.reason}`);
+        });
+    }
+    
+    return testData;
+}
+
 export async function showAriesView() {
     showView('aries');
     setActiveNavItem(document.getElementById('nav-aries'));
@@ -2672,14 +2858,17 @@ export async function showAriesView() {
         ? appState.ariesData.gasMCF 
         : new Array(46).fill('');
     
+    // Get well test data from database
+    const testData = getAriesWellTestData();
+    
     // Render the table
-    renderAriesTable(oilValues, gasValues);
+    renderAriesTable(oilValues, gasValues, testData);
     
     // Initialize edit button handlers
     initializeAriesEditHandlers();
 }
 
-function renderAriesTable(oilValues, gasValues) {
+function renderAriesTable(oilValues, gasValues, testData = []) {
     const tableBody = document.getElementById('ariesTableBody');
     tableBody.innerHTML = '';
     
@@ -2695,6 +2884,15 @@ function renderAriesTable(oilValues, gasValues) {
             ? Math.round(parseFloat(gasValue) * 1000 / 30.3) 
             : '';
         
+        // Get test data from database
+        const testValues = testData[index] || { oilTest: null, gasTest: null };
+        const oilTest = testValues.oilTest !== null && testValues.oilTest !== undefined 
+            ? testValues.oilTest 
+            : '';
+        const gasTest = testValues.gasTest !== null && testValues.gasTest !== undefined 
+            ? testValues.gasTest 
+            : '';
+        
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="well-name-cell">${escapeHtml(wellName)}</td>
@@ -2702,8 +2900,8 @@ function renderAriesTable(oilValues, gasValues) {
             <td>${gasValue}</td>
             <td>${ariesOil}</td>
             <td>${ariesGas}</td>
-            <td></td>
-            <td></td>
+            <td>${oilTest}</td>
+            <td>${gasTest}</td>
             <td></td>
             <td></td>
         `;
@@ -2815,8 +3013,9 @@ function initializeAriesEditHandlers() {
                 const gasValues = currentColumn === 'gasMCF' 
                     ? lines 
                     : (appState.ariesData?.gasMCF || new Array(46).fill(''));
+                const testData = getAriesWellTestData();
                 
-                renderAriesTable(oilValues, gasValues);
+                renderAriesTable(oilValues, gasValues, testData);
                 
                 // Close modal after short delay
                 setTimeout(() => {
