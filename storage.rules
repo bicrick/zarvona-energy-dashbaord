@@ -18,5 +18,15 @@ service firebase.storage {
                        || request.resource.contentType.matches('application/octet-stream'));
       allow delete: if isAuthenticated();
     }
+    
+    // Well diagram files
+    // Path: /diagrams/{sheetId}/{wellId}/{fileName}
+    match /diagrams/{sheetId}/{wellId}/{fileName} {
+      // Allow authenticated users to read, write, and delete
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+                   && request.resource.size < 20 * 1024 * 1024; // 20MB max
+      allow delete: if isAuthenticated();
+    }
   }
 }

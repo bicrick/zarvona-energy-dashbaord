@@ -316,8 +316,24 @@
 
             <!-- Well Detail View -->
             <div id="wellView" class="view">
-                <header class="view-header">
-                    <h2 id="wellName">Well Name</h2>
+                <header class="view-header well-header">
+                    <div class="well-header-title">
+                        <h2 id="wellName">Well Name</h2>
+                        <button class="btn-diagram" id="btnWellDiagram" title="Well Diagram">
+                            <svg width="24" height="24" viewBox="-377 383 256 256" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <polygon fill="none" points="-258.1,479.3 -260.3,494.7 -247.3,483.7"/>
+                                    <polygon fill="none" points="-229.1,579 -234.9,539.1 -260.2,555.2"/>
+                                    <polygon fill="none" points="-237.5,520.8 -241.4,494.1 -256.4,506.8"/>
+                                    <polygon fill="none" points="-263.4,516.2 -267.7,546 -243.8,530.8"/>
+                                    <polygon fill="none" points="-200.9,562.9 -184.5,562.9 -184.5,509.8 -229.9,491 -227.7,506.5 -211.9,616 -200.9,616"/>
+                                    <polygon fill="none" points="-257.8,616 -223.8,616 -227,593.7"/>
+                                    <polygon fill="none" points="-270.1,562.4 -277.8,616 -237.9,587.1"/>
+                                    <path d="M-156.8,616v-53.2h-17v-48.6l1.3,0.6c0.7,0.3,1.3,0.4,2.1,0.4c2.1,0,4.1-1.2,5-3.3l7.6-18.4c0.6-1.3,0.6-2.8,0-4.1 c-0.6-1.3-1.6-2.3-2.9-2.9l-115.9-48c4.2-8.1,8-16.3,11.3-24.5c1.1-2.7-0.2-5.8-2.9-7l-45.8-19c-2.7-1.1-5.9,0.2-7,2.8 c-11.3,26.6-18.6,56.1-23,93.1c-0.3,2.4,1.1,4.7,3.3,5.6l19.6,8.1c2.2,0.9,4.8,0.3,6.2-1.6c8.5-10.8,15.8-20.9,22.5-31l23.2,9.6 l-1.1,7.9l-3.5,23.9L-289.6,616h-77.5v18.9H-133V616L-156.8,616L-156.8,616z M-237.5,520.8l-18.9-14.1l15-12.7L-237.5,520.8z M-234.9,539.1l5.7,39.9l-31-23.8L-234.9,539.1z M-258.1,479.3l10.7,4.5l-12.9,10.9L-258.1,479.3z M-263.4,516.2l19.6,14.6 l-23.9,15.2L-263.4,516.2z M-270.1,562.4l32.2,24.7l-39.9,28.9L-270.1,562.4z M-257.8,616l30.8-22.3l3.2,22.3H-257.8z M-227.7,506.5l-2.2-15.5l45.4,18.8v53.1h-16.4V616h-11L-227.7,506.5z"/>
+                                </g>
+                            </svg>
+                        </button>
+                    </div>
                     <span class="breadcrumb" id="wellBreadcrumb"></span>
                 </header>
 
@@ -960,6 +976,66 @@
                     <div class="edit-modal-footer">
                         <button type="button" class="btn-cancel" id="btnCancelFailure">Cancel</button>
                         <button type="submit" class="btn-save" id="btnSubmitFailure" form="failureForm">Add Entry</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Well Diagram Upload Modal -->
+            <div class="edit-modal" id="diagramModal">
+                <div class="edit-modal-overlay" id="diagramModalOverlay"></div>
+                <div class="edit-modal-content diagram-modal">
+                    <div class="edit-modal-header">
+                        <h3>Upload Well Diagram</h3>
+                        <button class="btn-close-modal" id="btnCloseDiagramModal">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="edit-modal-body">
+                        <form id="diagramForm" class="diagram-form">
+                            <div class="form-group">
+                                <label>Diagram File <span class="required">*</span></label>
+                                <input type="file" id="diagramFileInput" hidden>
+                                
+                                <div class="file-drop-zone" id="diagramDropZone">
+                                    <div class="file-drop-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <p><strong>Click to upload</strong> or drag and drop</p>
+                                    <p class="file-hint">Any file type - Max 20MB</p>
+                                </div>
+                                
+                                <div class="file-info" id="diagramFileInfo" style="display: none;">
+                                    <div class="file-info-icon">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                            <polyline points="13 2 13 9 20 9"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="file-info-details">
+                                        <span class="file-name" id="diagramFileName"></span>
+                                        <span class="file-size" id="diagramFileSize"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="upload-progress" id="diagramUploadProgress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="diagramProgressBar"></div>
+                                </div>
+                                <span class="progress-text" id="diagramProgressText">0%</span>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="edit-modal-footer">
+                        <button type="button" class="btn-cancel" id="btnCancelDiagram">Cancel</button>
+                        <button type="submit" class="btn-save" id="btnSubmitDiagram" form="diagramForm">Upload</button>
                     </div>
                 </div>
             </div>

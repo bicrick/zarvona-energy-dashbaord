@@ -4,6 +4,7 @@ import { renderProductionCharts } from './charts/production.js';
 import { initializeEditHandlers } from './edit-modal.js';
 import { renderDashboard } from './dashboard.js';
 import { hasUploadedData, getBatteryStats } from './data-aggregation.js';
+import { attachDiagramButtonHandler } from './diagram-modal.js';
 import { loadWellDetails, loadWellsList, loadDashboardData as refreshDashboardData, loadSheetAggregateData, loadMasterChemicalData, updateChemicalProgramValues } from './firestore-storage.js';
 import { findChemicalProgramMatch } from './chemical-matcher.js';
 import { setActiveNavItem } from './navigation.js';
@@ -875,6 +876,20 @@ export async function showWellView(sheetId, wellId) {
 
     document.getElementById('wellName').textContent = well.name;
     document.getElementById('wellBreadcrumb').textContent = `${sheetConfig.name} > ${well.name}`;
+
+    // Update diagram icon state and attach click handler
+    const diagramBtn = document.getElementById('btnWellDiagram');
+    if (diagramBtn) {
+        if (well.diagram?.fileUrl) {
+            diagramBtn.classList.add('has-diagram');
+            diagramBtn.title = 'Well Diagram (Click to change)';
+        } else {
+            diagramBtn.classList.remove('has-diagram');
+            diagramBtn.title = 'Upload Well Diagram';
+        }
+        // Attach the click handler after the button is in the DOM
+        attachDiagramButtonHandler();
+    }
 
     // Show loading state if well details aren't loaded yet
     if (!well._detailsLoaded || well._summaryOnly) {

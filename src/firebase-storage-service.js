@@ -152,3 +152,112 @@ export function validateFailureFile(file) {
     
     return { valid: true, error: null };
 }
+
+/**
+ * Upload a well diagram file to Firebase Storage
+ * @param {string} sheetId - The gauge sheet ID
+ * @param {string} wellId - The well ID
+ * @param {File} file - The file to upload
+ * @param {Function} progressCallback - Optional callback for upload progress (percent)
+ * @returns {Promise<{fileUrl: string, filePath: string, fileName: string, fileSize: number}>}
+ */
+export async function uploadDiagramFile(sheetId, wellId, file, progressCallback = null) {
+    try {
+        // Get file extension
+        const fileExtension = file.name.split('.').pop();
+        
+        // Create storage path
+        const filePath = `diagrams/${sheetId}/${wellId}/diagram.${fileExtension}`;
+        const storageRef = ref(storage, filePath);
+        
+        // Create upload task
+        const uploadTask = uploadBytesResumable(storageRef, file);
+        
+        // Return promise that resolves with file metadata
+        return new Promise((resolve, reject) => {
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    // Calculate progress percentage
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    if (progressCallback) {
+                        progressCallback(progress);
+                    }
+                },
+                (error) => {
+                    // Handle upload errors
+                    console.error('Upload error:', error);
+                    reject(error);
+                },
+                async () => {
+                    // Upload completed successfully, get download URL
+                    try {
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        
+                        resolve({
+                            fileUrl: downloadURL,
+                            filePath: filePath,
+                            fileName: file.name,
+                            fileSize: file.size
+                        });
+                    } catch (error) {
+                        console.error('Error getting download URL:', error);
+                        reject(error);
+                    }
+                }
+            );
+        });
+    } catch (error) {
+        console.error('Error uploading diagram file:', error);
+        throw error;
+    }
+}
+
+/**
+ * Delete a well diagram file from Firebase Storage
+ * @param {string} filePath - The storage path of the file to delete
+ * @returns {Promise<boolean>} Success status
+ */
+export async function deleteDiagramFile(filePath) {
+    try {
+        if (!filePath) {
+            console.warn('No file path provided for deletion');
+            return false;
+        }
+        
+        const fileRef = ref(storage, filePath);
+        await deleteObject(fileRef);
+        
+        return true;
+    } catch (error) {
+        // If file doesn't exist, consider it a success
+        if (error.code === 'storage/object-not-found') {
+            console.warn('File not found, already deleted:', filePath);
+            return true;
+        }
+        
+        console.error('Error deleting diagram file:', error);
+        throw error;
+    }
+}
+
+/**
+ * Validate file for diagram upload
+ * @param {File} file - The file to validate
+ * @returns {{valid: boolean, error: string|null}}
+ */
+export function validateDiagramFile(file) {
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+    
+    // Check if file exists
+    if (!file) {
+        return { valid: false, error: 'No file selected' };
+    }
+    
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+        return { valid: false, error: `File size exceeds 20MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)` };
+    }
+    
+    return { valid: true, error: null };
+}

@@ -736,6 +736,64 @@ body {
     display: block;
 }
 
+/* Well Header with Diagram Icon */
+.well-header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-diagram svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--text-secondary);
+    transition: fill 0.2s ease;
+}
+
+.btn-diagram:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent);
+}
+
+.btn-diagram:hover svg {
+    fill: var(--accent);
+}
+
+.btn-diagram:active {
+    transform: scale(0.95);
+}
+
+.btn-diagram.has-diagram {
+    border-color: var(--success);
+}
+
+.btn-diagram.has-diagram svg {
+    fill: var(--success);
+}
+
+.btn-diagram.has-diagram:hover {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.btn-diagram.has-diagram:hover svg {
+    fill: white;
+}
+
 /* Welcome View */
 .welcome-container {
     max-width: 800px;

@@ -446,6 +446,7 @@ export async function loadNavigationData(progressCallback = null) {
                     pressureReadings: wellData.pressureReadings || [],
                     chemicalProgram: wellData.chemicalProgram || {},
                     failureHistory: wellData.failureHistory || [],
+                    diagram: wellData.diagram || null,
                     actionItems: wellData.actionItems || [],
                     completedActions: wellData.completedActions || [],
                     pumpEfficiency: wellData.pumpEfficiency || null,
@@ -634,6 +635,7 @@ export async function loadWellDetails(sheetId, wellId) {
                 actionItems: wellData.actionItems || [],
                 completedActions: wellData.completedActions || [],
                 pumpEfficiency: wellData.pumpEfficiency || null,
+                diagram: wellData.diagram || null,
                 _detailsLoaded: false
             };
             sheetData.wells.push(well);
@@ -672,6 +674,7 @@ export async function loadWellDetails(sheetId, wellId) {
             well.actionItems = wellData.actionItems || [];
             well.completedActions = wellData.completedActions || [];
             well.pumpEfficiency = wellData.pumpEfficiency || null;
+            well.diagram = wellData.diagram || null;
             well.status = wellData.status || 'active';
         }
         
@@ -1324,6 +1327,101 @@ export async function deleteFailureHistoryEntry(sheetId, wellId, failureId) {
         return true;
     } catch (error) {
         console.error('Error deleting failure history entry:', error);
+        return false;
+    }
+}
+
+// ============================================================================
+// WELL DIAGRAM CRUD OPERATIONS
+// ============================================================================
+
+/**
+ * Save well diagram metadata to Firestore
+ * @param {string} sheetId - The gauge sheet ID
+ * @param {string} wellId - The well ID
+ * @param {object} diagramData - The diagram file metadata
+ * @param {string} diagramData.fileUrl - Firebase Storage download URL
+ * @param {string} diagramData.filePath - Firebase Storage path
+ * @param {string} diagramData.fileName - Original file name
+ * @param {number} diagramData.fileSize - File size in bytes
+ * @returns {Promise<boolean>} Success status
+ */
+export async function saveDiagramMetadata(sheetId, wellId, diagramData) {
+    try {
+        console.log('saveDiagramMetadata called', { sheetId, wellId, diagramData });
+        const wellRef = doc(db, `gaugeSheets/${sheetId}/wells`, wellId);
+        
+        const diagramMetadata = {
+            diagram: {
+                fileUrl: diagramData.fileUrl,
+                filePath: diagramData.filePath,
+                fileName: diagramData.fileName,
+                fileSize: diagramData.fileSize,
+                uploadedAt: Timestamp.now()
+            }
+        };
+        
+        await setDoc(wellRef, diagramMetadata, { merge: true });
+        console.log('Diagram saved to Firestore');
+        
+        // Update local state
+        const well = appState.appData[sheetId]?.wells.find(w => w.id === wellId);
+        if (well) {
+            well.diagram = diagramMetadata.diagram;
+            console.log('Local state updated with diagram:', well.diagram);
+        } else {
+            console.warn('Well not found in local state for updating diagram');
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error saving diagram metadata:', error);
+        return false;
+    }
+}
+
+/**
+ * Delete well diagram metadata from Firestore
+ * @param {string} sheetId - The gauge sheet ID
+ * @param {string} wellId - The well ID
+ * @returns {Promise<boolean>} Success status
+ */
+export async function deleteDiagramMetadata(sheetId, wellId) {
+    try {
+        const wellRef = doc(db, `gaugeSheets/${sheetId}/wells`, wellId);
+        const wellDoc = await getDoc(wellRef);
+        
+        if (!wellDoc.exists()) {
+            console.error(`Well ${wellId} not found in sheet ${sheetId}`);
+            return false;
+        }
+        
+        const wellData = wellDoc.data();
+        
+        // Delete file from Storage if it exists
+        if (wellData.diagram?.filePath) {
+            try {
+                const { deleteDiagramFile } = await import('./firebase-storage-service.js');
+                await deleteDiagramFile(wellData.diagram.filePath);
+            } catch (error) {
+                console.error('Error deleting diagram file from storage:', error);
+            }
+        }
+        
+        // Remove diagram field from Firestore
+        await setDoc(wellRef, {
+            diagram: deleteField()
+        }, { merge: true });
+        
+        // Update local state
+        const well = appState.appData[sheetId]?.wells.find(w => w.id === wellId);
+        if (well) {
+            delete well.diagram;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error deleting diagram metadata:', error);
         return false;
     }
 }
