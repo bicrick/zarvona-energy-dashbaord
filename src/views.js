@@ -2684,13 +2684,24 @@ function renderAriesTable(oilValues, gasValues) {
     tableBody.innerHTML = '';
     
     ARIES_WELLS.forEach((wellName, index) => {
+        const oilValue = oilValues[index] || '';
+        const gasValue = gasValues[index] || '';
+        
+        // Calculate Aries values: value * 1000 / 30.3, rounded
+        const ariesOil = oilValue !== '' && !isNaN(parseFloat(oilValue)) 
+            ? Math.round(parseFloat(oilValue) * 1000 / 30.3) 
+            : '';
+        const ariesGas = gasValue !== '' && !isNaN(parseFloat(gasValue)) 
+            ? Math.round(parseFloat(gasValue) * 1000 / 30.3) 
+            : '';
+        
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="well-name-cell">${escapeHtml(wellName)}</td>
-            <td>${oilValues[index] || ''}</td>
-            <td>${gasValues[index] || ''}</td>
-            <td></td>
-            <td></td>
+            <td>${oilValue}</td>
+            <td>${gasValue}</td>
+            <td>${ariesOil}</td>
+            <td>${ariesGas}</td>
             <td></td>
             <td></td>
             <td></td>
