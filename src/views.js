@@ -2889,9 +2889,10 @@ function renderAriesTable(oilValues, gasValues, testData = []) {
         const oilTest = testValues.oilTest !== null && testValues.oilTest !== undefined 
             ? testValues.oilTest 
             : '';
-        const gasTest = testValues.gasTest !== null && testValues.gasTest !== undefined 
-            ? testValues.gasTest 
-            : '';
+        // If Gas (MMCF) is empty/null, don't show gas test data
+        const gasTest = (gasValue === '' || testValues.gasTest === null || testValues.gasTest === undefined)
+            ? ''
+            : testValues.gasTest;
         
         // Calculate deltas (only if both values are valid and non-zero)
         let deltaOilValue = '';
