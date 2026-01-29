@@ -1,0 +1,74 @@
+Subject: How to Manage Your Zarvona Dashboard Billing & Shutdown
+
+Hi [Client Name],
+
+Now that billing is transferred to your account, here's what you need to know:
+
+=== ACCESS INFORMATION ===
+
+Dashboard Login:
+- URL: https://zarvona-energy-dashboard.web.app
+- Username: user@zarvonaenergy.com
+- Password: wtxnorth
+
+Google Cloud/Firebase Console:
+- Use your owner account: jlmanzo708@gmail.com
+- Firebase Console: https://console.firebase.google.com/project/zarvona-energy-a85ce
+- Google Cloud Console: https://console.cloud.google.com/home/dashboard?project=zarvona-energy-a85ce
+
+=== CURRENT STATUS ===
+
+✓ You are now the owner of the Firebase project
+✓ Your billing account is paying for all charges (not mine)
+✓ I maintain developer access to fix issues and deploy updates
+✓ Expected monthly cost: $[X-Y] (varies by usage)
+
+=== MONITORING COSTS ===
+
+View your charges anytime:
+https://console.cloud.google.com/billing?project=zarvona-energy-a85ce
+
+Set up budget alerts (recommended):
+https://console.cloud.google.com/billing/budgets?project=zarvona-energy-a85ce
+
+=== IF YOU WANT TO SHUT IT DOWN ===
+
+I've attached detailed instructions, but here's the quick version:
+
+OPTION 1: Temporarily Disable (Can turn back on)
+- Disables the website but keeps data
+- Costs drop to near $0/month
+- Reversible
+
+OPTION 2: Permanently Delete (Cannot undo)
+- Deletes everything: website, data, users
+- Billing stops completely
+- Backup your data first!
+
+To delete the project:
+1. Go to: https://console.firebase.google.com/project/zarvona-energy-a85ce/settings/general
+2. Scroll to bottom
+3. Click "Delete project"
+4. Type: zarvona-energy-a85ce
+5. Confirm deletion
+
+⚠️  WARNING: This is PERMANENT. All data will be lost.
+
+=== BACKUP BEFORE SHUTDOWN ===
+
+If you plan to shut down:
+1. Contact me first - I can export all your data
+2. Or follow backup instructions in attached document
+3. Save exports to your computer
+
+=== QUESTIONS? ===
+
+- Technical issues or bugs: Email me
+- Billing questions: Check Google Cloud Console
+- Want to shut down: Let me know first (I can help export data)
+
+See attached SHUTDOWN-INSTRUCTIONS.md for complete details.
+
+Thanks,
+Patrick
+patrickbrownai@gmail.com

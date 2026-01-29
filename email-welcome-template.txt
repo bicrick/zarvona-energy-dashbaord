@@ -1,0 +1,61 @@
+Subject: Welcome to Your Zarvona Energy Dashboard
+
+Hi [Client Name],
+
+Your Zarvona Energy Dashboard is now fully set up and ready to use! Here's everything you need to get started:
+
+=== QUICK ACCESS ===
+
+Dashboard: https://zarvona-energy-dashboard.web.app
+Username: user@zarvonaenergy.com
+Password: wtxnorth
+
+=== WHAT YOU'VE RECEIVED ===
+
+I've attached two important documents:
+
+1. GETTING-STARTED.pdf
+   - What the dashboard does
+   - How to log in and navigate
+   - How to upload gauge sheets
+   - Common tasks and troubleshooting
+   - READ THIS FIRST!
+
+2. SHUTDOWN-INSTRUCTIONS.pdf
+   - How to manage billing
+   - How to shut down when no longer needed
+   - Keep this for future reference
+
+=== YOUR RESPONSIBILITIES ===
+
+✓ Billing - Your account (jlmanzo708@gmail.com) now pays all charges
+✓ Expected cost: $5-50/month depending on usage
+✓ Monitor costs: https://console.cloud.google.com/billing?project=zarvona-energy-a85ce
+✓ Recommend: Set up budget alerts (instructions in Getting Started guide)
+
+=== MY RESPONSIBILITIES ===
+
+✓ Technical support and bug fixes
+✓ Feature updates and improvements
+✓ Deploy code changes as needed
+✓ Developer access maintained for maintenance
+
+=== FIRST STEPS ===
+
+1. Log in to the dashboard using the credentials above
+2. Upload your Excel gauge sheets (see Getting Started guide)
+3. Explore the different views and features
+4. Set up billing alerts in Google Cloud Console
+5. Reach out with any questions!
+
+=== QUESTIONS OR ISSUES? ===
+
+Contact me anytime:
+- Email: patrickbrownai@gmail.com
+- For technical issues, feature requests, or general questions
+
+The dashboard is yours to use. I'm here to support you if you need anything!
+
+Best regards,
+Patrick Brown
+patrickbrownai@gmail.com
