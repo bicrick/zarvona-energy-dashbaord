@@ -2817,8 +2817,8 @@ function getAriesWellTestData() {
             }
             
             testData.push({
-                oilTest: foundAny ? Math.round(totalOil * 100) / 100 : null,
-                gasTest: foundAny ? Math.round(totalGas * 100) / 100 : null
+                oilTest: foundAny ? Math.round(totalOil) : null,
+                gasTest: foundAny ? Math.round(totalGas) : null
             });
         } else {
             const dbName = dbNames[0];
@@ -2844,10 +2844,10 @@ function getAriesWellTestData() {
             
             testData.push({
                 oilTest: (oil !== null && oil !== undefined && !isNaN(oil)) 
-                    ? Math.round(Number(oil) * 100) / 100 
+                    ? Math.round(Number(oil)) 
                     : null,
                 gasTest: (gas !== null && gas !== undefined && !isNaN(gas)) 
-                    ? Math.round(Number(gas) * 100) / 100 
+                    ? Math.round(Number(gas)) 
                     : null
             });
         }
